@@ -1,5 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeveloptmentProcessesHITS", "DeveloptmentProcessesHITS\DeveloptmentProcessesHITS.csproj", "{584A74DF-F47B-464D-894D-0581D5726039}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{ECD21EDA-953E-4946-889B-785CF8272EF1}"
@@ -35,5 +38,8 @@ Global
 		{6F70FC1F-DA1B-4A31-8FFD-2626F01B113F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F70FC1F-DA1B-4A31-8FFD-2626F01B113F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F70FC1F-DA1B-4A31-8FFD-2626F01B113F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
