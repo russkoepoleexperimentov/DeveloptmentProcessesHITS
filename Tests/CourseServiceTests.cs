@@ -452,24 +452,85 @@ namespace Tests
 
             // Assert
             await act.Should().ThrowAsync<ForbiddenException>()
-                .WithMessage("Only teachers can remove members");
+                .WithMessage("Only teachers can remove other members");
         }
 
         [Fact]
-        public async Task RemoveMemberAsync_ShouldThrow_WhenRemovingSelf()
+        public async Task RemoveMemberAsync_ShouldAllowUserToRemoveSelf_WhenNotAuthor()
         {
             // Arrange
+            var authorId = Guid.NewGuid();
             var courseId = Guid.NewGuid();
-            var teacherId = Guid.NewGuid();
+            var studentId = Guid.NewGuid();
 
-            await SetupCourseWithMembers(courseId, teacherId, teacherId, UserRoleType.Teacher);
+            var course = new Course
+            {
+                Id = courseId,
+                AuthorId = authorId,
+                Title = "Test",
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.Courses.Add(course);
+
+            var studentRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = studentId,
+                RoleType = UserRoleType.Student,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.CourseRoles.Add(studentRole);
+            await _context.SaveChangesAsync();
 
             // Act
-            Func<Task> act = async () => await _courseService.RemoveMemberAsync(teacherId, courseId, teacherId);
+            await _courseService.RemoveMemberAsync(studentId, courseId, studentId);
+
+            // Assert
+            var role = await _context.CourseRoles
+                .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == studentId);
+            role.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task RemoveMemberAsync_ShouldThrow_WhenAuthorTriesToRemoveSelf()
+        {
+            // Arrange
+            var authorId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+
+            var course = new Course
+            {
+                Id = courseId,
+                AuthorId = authorId,
+                Title = "Test",
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.Courses.Add(course);
+
+            var authorRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = authorId,
+                RoleType = UserRoleType.Teacher,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.CourseRoles.Add(authorRole);
+            await _context.SaveChangesAsync();
+
+            // Act
+            Func<Task> act = async () => await _courseService.RemoveMemberAsync(authorId, courseId, authorId);
 
             // Assert
             await act.Should().ThrowAsync<BadRequestException>()
-                .WithMessage("Cannot remove yourself from the course");
+                .WithMessage("Cannot remove course creator");
         }
 
         [Fact]

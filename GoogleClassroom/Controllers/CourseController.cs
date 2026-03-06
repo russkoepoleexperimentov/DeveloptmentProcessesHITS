@@ -126,6 +126,26 @@ namespace GoogleClassroom.Controllers
             });
         }
 
+
+
+        /// <summary>
+        /// Выйти из курса
+        /// </summary>
+        [HttpDelete("{id}/leave")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LeaveCourse(Guid id)
+        {
+            var currentUserId = HttpContext.GetUserId()!.Value;
+            await _courseService.RemoveMemberAsync(currentUserId, id, currentUserId);
+            return Ok(new ApiResponse<object>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = new { id }
+            });
+        }
+
         /// <summary>
         /// Присоединиться к курсу по инвайт-коду
         /// </summary>

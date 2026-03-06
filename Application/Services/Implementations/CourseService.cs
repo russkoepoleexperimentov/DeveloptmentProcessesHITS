@@ -191,24 +191,39 @@ namespace Application.Services.Implementations
 
         public async Task RemoveMemberAsync(Guid currentUserId, Guid courseId, Guid targetUserId)
         {
+            var course = await _context.Courses.FindAsync(courseId);
+            if (course == null)
+                throw new NotFoundException("Course not found");
+
+            // Нельзя удалить создателя курса
+            if (targetUserId == course.AuthorId)
+                throw new BadRequestException("Cannot remove course creator");
+
+            // Если пользователь удаляет себя, разрешаем без проверки роли
+            if (currentUserId == targetUserId)
+            {
+                var selfRole = await _context.CourseRoles
+                    .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == currentUserId);
+                if (selfRole == null)
+                    throw new NotFoundException("User is not a member of this course");
+
+                _context.CourseRoles.Remove(selfRole);
+                await _context.SaveChangesAsync();
+                return;
+            }
+
+            // Удаление другого пользователя – только для учителей
             var currentUserRole = await _context.CourseRoles
                 .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == currentUserId);
 
             if (currentUserRole == null || currentUserRole.RoleType != UserRoleType.Teacher)
-                throw new ForbiddenException("Only teachers can remove members");
-
-            if (currentUserId == targetUserId)
-                throw new BadRequestException("Cannot remove yourself from the course");
+                throw new ForbiddenException("Only teachers can remove other members");
 
             var targetRole = await _context.CourseRoles
                 .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == targetUserId);
 
             if (targetRole == null)
                 throw new NotFoundException("Target user is not a member of this course");
-
-            var course = await _context.Courses.FindAsync(courseId);
-            if (course.AuthorId == targetUserId)
-                throw new BadRequestException("Cannot remove course creator");
 
             _context.CourseRoles.Remove(targetRole);
             await _context.SaveChangesAsync();
