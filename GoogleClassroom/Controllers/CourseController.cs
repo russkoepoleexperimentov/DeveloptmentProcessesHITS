@@ -23,12 +23,12 @@ namespace GoogleClassroom.Controllers
         /// </summary>
         [HttpPost]
         [Authorize(AuthenticationSchemes = "Bearer")]
-        [ProducesResponseType(typeof(ApiResponse<CreateCourseResponseDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequestDto request)
+        [ProducesResponseType(typeof(ApiResponse<CreateUpdateCourseResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateCourse([FromBody] CreateUpdateCourseRequestDto request)
         {
             var userId = HttpContext.GetUserId()!.Value;
             var result = await _courseService.CreateCourseAsync(userId, request);
-            return Ok(new ApiResponse<CreateCourseResponseDto>
+            return Ok(new ApiResponse<CreateUpdateCourseResponseDto>
             {
                 Type = ApiResponseType.Success,
                 Message = null,

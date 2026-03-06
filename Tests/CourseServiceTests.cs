@@ -46,7 +46,7 @@ namespace Tests
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreateCourseRequestDto { Title = "Test Course" };
+            var request = new CreateUpdateCourseRequestDto { Title = "Test Course" };
             _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
                 .ReturnsAsync(new User());
 
@@ -75,7 +75,7 @@ namespace Tests
         {
             // Arrange
             var userId = Guid.NewGuid();
-            var request = new CreateCourseRequestDto { Title = "Test" };
+            var request = new CreateUpdateCourseRequestDto { Title = "Test" };
 
             _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
                 .ReturnsAsync((User)null);
@@ -640,4 +640,186 @@ namespace Tests
             await _context.SaveChangesAsync();
         }
     }
-}
+
+    #region UpdateCourseAsync
+
+[Fact]
+        public async Task UpdateCourseAsync_ShouldUpdateTitle_WhenUserIsTeacher()
+        {
+            // Arrange
+            var authorId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+            var course = new Course
+            {
+                Id = courseId,
+                Title = "Old Title",
+                AuthorId = authorId,
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow.AddDays(-1),
+                UpdatedDate = DateTime.UtcNow.AddDays(-1)
+            };
+            _context.Courses.Add(course);
+
+            var teacherRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = authorId,
+                RoleType = UserRoleType.Teacher,
+                CreatedDate = DateTime.UtcNow.AddDays(-1),
+                UpdatedDate = DateTime.UtcNow.AddDays(-1)
+            };
+            _context.CourseRoles.Add(teacherRole);
+            await _context.SaveChangesAsync();
+
+            var request = new CreateUpdateCourseRequestDto { Title = "New Title" };
+
+            // Act
+            var result = await _courseService.UpdateCourseAsync(authorId, courseId, request);
+
+            // Assert
+            result.Id.Should().Be(courseId);
+            result.Title.Should().Be("New Title");
+
+            var updatedCourse = await _context.Courses.FindAsync(courseId);
+            updatedCourse.Title.Should().Be("New Title");
+            updatedCourse.UpdatedDate.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(1));
+        }
+
+        [Fact]
+        public async Task UpdateCourseAsync_ShouldThrow_WhenCourseNotFound()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+            var request = new CreateUpdateCourseRequestDto { Title = "New" };
+
+            // Act
+            Func<Task> act = async () => await _courseService.UpdateCourseAsync(userId, courseId, request);
+
+            // Assert
+            await act.Should().ThrowAsync<NotFoundException>()
+                .WithMessage("Course not found");
+        }
+
+        [Fact]
+        public async Task UpdateCourseAsync_ShouldThrow_WhenUserNotTeacher()
+        {
+            // Arrange
+            var authorId = Guid.NewGuid();
+            var studentId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+
+            var course = new Course
+            {
+                Id = courseId,
+                Title = "Test",
+                AuthorId = authorId,
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.Courses.Add(course);
+
+            var studentRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = studentId,
+                RoleType = UserRoleType.Student,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.CourseRoles.Add(studentRole);
+            await _context.SaveChangesAsync();
+
+            var request = new CreateUpdateCourseRequestDto { Title = "Hack" };
+
+            // Act
+            Func<Task> act = async () => await _courseService.UpdateCourseAsync(studentId, courseId, request);
+
+            // Assert
+            await act.Should().ThrowAsync<ForbiddenException>()
+                .WithMessage("Only teachers can update course");
+        }
+
+        [Fact]
+        public async Task UpdateCourseAsync_ShouldThrow_WhenUserNotMember()
+        {
+            // Arrange
+            var authorId = Guid.NewGuid();
+            var strangerId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+
+            var course = new Course
+            {
+                Id = courseId,
+                Title = "Test",
+                AuthorId = authorId,
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.Courses.Add(course);
+            await _context.SaveChangesAsync();
+
+            var request = new CreateUpdateCourseRequestDto { Title = "Hack" };
+
+            // Act
+            Func<Task> act = async () => await _courseService.UpdateCourseAsync(strangerId, courseId, request);
+
+            // Assert
+            await act.Should().ThrowAsync<ForbiddenException>()
+                .WithMessage("Only teachers can update course"); // Или можно уточнить "User is not a member", но текущая логика проверяет role == null -> Forbidden
+        }
+        [Fact]
+        public async Task UpdateCourseAsync_ShouldAllowAnyTeacher_ToUpdateCourse()
+        {
+            // Arrange
+            var authorId = Guid.NewGuid();
+            var otherTeacherId = Guid.NewGuid();
+            var courseId = Guid.NewGuid();
+
+            var course = new Course
+            {
+                Id = courseId,
+                Title = "Original",
+                AuthorId = authorId,
+                InviteCode = "CODE",
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.Courses.Add(course);
+
+            var authorRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = authorId,
+                RoleType = UserRoleType.Teacher,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            var otherTeacherRole = new CourseRole
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                UserId = otherTeacherId,
+                RoleType = UserRoleType.Teacher,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+            _context.CourseRoles.AddRange(authorRole, otherTeacherRole);
+            await _context.SaveChangesAsync();
+
+            var request = new CreateUpdateCourseRequestDto { Title = "Updated by other teacher" };
+
+            // Act
+            var result = await _courseService.UpdateCourseAsync(otherTeacherId, courseId, request);
+
+            // Assert
+            result.Title.Should().Be("Updated by other teacher");
+        }
+
+        #endregion
+    }

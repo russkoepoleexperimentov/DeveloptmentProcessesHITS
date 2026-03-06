@@ -20,7 +20,7 @@ namespace Application.Services.Implementations
             _userManager = userManager;
         }
 
-        public async Task<CreateCourseResponseDto> CreateCourseAsync(Guid userId, CreateCourseRequestDto request)
+        public async Task<CreateUpdateCourseResponseDto> CreateCourseAsync(Guid userId, CreateUpdateCourseRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());
             if (user == null)
@@ -52,7 +52,7 @@ namespace Application.Services.Implementations
 
             await _context.SaveChangesAsync();
 
-            return new CreateCourseResponseDto
+            return new CreateUpdateCourseResponseDto
             {
                 Id = course.Id,
                 Title = course.Title
