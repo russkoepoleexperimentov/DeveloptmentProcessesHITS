@@ -37,6 +37,24 @@ namespace GoogleClassroom.Controllers
         }
 
         /// <summary>
+        /// Обновить информацию о курсе (только преподаватель)
+        /// </summary>
+        [HttpPut("{id}")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<CreateUpdateCourseResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] CreateUpdateCourseRequestDto request)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.UpdateCourseAsync(userId, id, request);
+            return Ok(new ApiResponse<CreateUpdateCourseResponseDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
         /// Получить информацию о курсе
         /// </summary>
         [HttpGet("{id}")]

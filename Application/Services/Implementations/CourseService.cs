@@ -59,6 +59,32 @@ namespace Application.Services.Implementations
             };
         }
 
+        public async Task<CreateUpdateCourseResponseDto> UpdateCourseAsync(Guid currentUserId, Guid courseId, CreateUpdateCourseRequestDto request)
+        {
+            // Находим курс
+            var course = await _context.Courses.FindAsync(courseId);
+            if (course == null)
+                throw new NotFoundException("Course not found");
+
+            // Проверяем, является ли текущий пользователь преподавателем этого курса
+            var userRole = await _context.CourseRoles
+                .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == currentUserId);
+
+            if (userRole == null || userRole.RoleType != UserRoleType.Teacher)
+                throw new ForbiddenException("Only teachers can update course");
+
+            course.Title = request.Title;
+            course.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return new CreateUpdateCourseResponseDto
+            {
+                Id = course.Id,
+                Title = course.Title
+            };
+        }
+
         public async Task<JoinCourseResponseDto> JoinCourseAsync(Guid userId, JoinCourseRequestDto request)
         {
             var user = await _userManager.FindByIdAsync(userId.ToString());

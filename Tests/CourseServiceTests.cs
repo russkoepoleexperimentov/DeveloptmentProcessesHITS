@@ -639,11 +639,10 @@ namespace Tests
             _context.CourseRoles.AddRange(currentUserRoleEntity, targetUserRoleEntity);
             await _context.SaveChangesAsync();
         }
-    }
 
-    #region UpdateCourseAsync
+        #region UpdateCourseAsync
 
-[Fact]
+        [Fact]
         public async Task UpdateCourseAsync_ShouldUpdateTitle_WhenUserIsTeacher()
         {
             // Arrange
@@ -823,3 +822,4 @@ namespace Tests
 
         #endregion
     }
+}
