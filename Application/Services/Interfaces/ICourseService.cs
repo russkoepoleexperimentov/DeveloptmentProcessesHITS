@@ -1,0 +1,15 @@
+﻿using GoogleClass.DTOs.Common;
+using GoogleClass.DTOs.Course;
+
+namespace Application.Services.Interfaces
+{
+    public interface ICourseService
+    {
+        Task<CreateCourseResponseDto> CreateCourseAsync(Guid userId, CreateCourseRequestDto request);
+        Task<JoinCourseResponseDto> JoinCourseAsync(Guid userId, JoinCourseRequestDto request);
+        Task<CourseDetailsDto> GetCourseDetailsAsync(Guid userId, Guid courseId);
+        Task<ChangeRoleResponseDto> ChangeRoleAsync(Guid currentUserId, Guid courseId, Guid targetUserId, ChangeRoleRequestDto request);
+        Task RemoveMemberAsync(Guid currentUserId, Guid courseId, Guid targetUserId);
+        Task<PagedResponse<CourseMemberDto>> GetMembersAsync(Guid currentUserId, Guid courseId, int skip, int take, string? query);
+    }
+}

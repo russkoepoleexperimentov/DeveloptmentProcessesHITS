@@ -109,6 +109,7 @@ namespace Web
             builder.Services
                 .AddScoped<IUserService, UserService>()
                 .AddScoped<IAuthService, AuthService>()
+                .AddScoped<ICourseService, CourseService>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()
                 .AddScoped<IValidator<UserUpdateDto>, UserUpdateValidator>()
                 .AddScoped<IValidator<UserLoginDto>, UserLoginValidator>()
@@ -161,7 +162,7 @@ namespace Web
 
             app.Run();
 
-
+            Console.WriteLine("Classroom backend had started");
         }
     }
 }

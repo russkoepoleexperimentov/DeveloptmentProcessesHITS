@@ -1,0 +1,129 @@
+﻿using Application.Services.Interfaces;
+using Common;
+using GoogleClass.DTOs.Common;
+using GoogleClass.DTOs.Course;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GoogleClassroom.Controllers
+{
+    [ApiController]
+    [Route("api/course")]
+    public class CourseController : ControllerBase
+    {
+        private readonly ICourseService _courseService;
+
+        public CourseController(ICourseService courseService)
+        {
+            _courseService = courseService;
+        }
+
+        /// <summary>
+        /// Создать новый курс
+        /// </summary>
+        [HttpPost]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<CreateCourseResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateCourse([FromBody] CreateCourseRequestDto request)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.CreateCourseAsync(userId, request);
+            return Ok(new ApiResponse<CreateCourseResponseDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
+        /// Получить информацию о курсе
+        /// </summary>
+        [HttpGet("{id}")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<CourseDetailsDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetCourseDetails(Guid id)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.GetCourseDetailsAsync(userId, id);
+            return Ok(new ApiResponse<CourseDetailsDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
+        /// Получить список участников курса (только преподаватель)
+        /// </summary>
+        [HttpGet("{id}/members")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<CourseMemberDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMembers(Guid id, [FromQuery] int skip = 0, [FromQuery] int take = 10, [FromQuery] string? query = null)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.GetMembersAsync(userId, id, skip, take, query);
+            return Ok(new ApiResponse<PagedResponse<CourseMemberDto>>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
+        /// Изменить роль участника (только преподаватель)
+        /// </summary>
+        [HttpPut("{id}/members/{userId}/role")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<ChangeRoleResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ChangeRole(Guid id, Guid userId, [FromBody] ChangeRoleRequestDto request)
+        {
+            var currentUserId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.ChangeRoleAsync(currentUserId, id, userId, request);
+            return Ok(new ApiResponse<ChangeRoleResponseDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
+        /// Удалить участника из курса (только преподаватель)
+        /// </summary>
+        [HttpDelete("{id}/members/{userId}")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> RemoveMember(Guid id, Guid userId)
+        {
+            var currentUserId = HttpContext.GetUserId()!.Value;
+            await _courseService.RemoveMemberAsync(currentUserId, id, userId);
+            return Ok(new ApiResponse<object>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = new { id }
+            });
+        }
+
+        /// <summary>
+        /// Присоединиться к курсу по инвайт-коду
+        /// </summary>
+        [HttpPost("join")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<JoinCourseResponseDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> JoinCourse([FromBody] JoinCourseRequestDto request)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.JoinCourseAsync(userId, request);
+            return Ok(new ApiResponse<JoinCourseResponseDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+    }
+}

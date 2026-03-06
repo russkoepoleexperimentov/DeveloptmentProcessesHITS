@@ -12,5 +12,6 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     }
 
     public DbSet<RefreshToken> RefreshTokens { get; set; }
-
+    public DbSet<Course> Courses { get; set; }
+    public DbSet<CourseRole> CourseRoles { get; set; }
 }
