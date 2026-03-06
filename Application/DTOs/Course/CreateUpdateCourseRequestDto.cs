@@ -2,11 +2,8 @@
 
 namespace GoogleClass.DTOs.Course;
 
-public class CreateCourseResponseDto
+public class CreateUpdateCourseRequestDto
 {
-    [Required]
-    public Guid Id { get; set; }
-    
     [Required]
     public string Title { get; set; } = null!;
 }
