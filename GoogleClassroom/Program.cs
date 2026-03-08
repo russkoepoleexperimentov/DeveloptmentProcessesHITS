@@ -4,6 +4,7 @@ using Application.Services.Abstractions;
 using Application.Services.Implementations;
 using Application.Services.Interfaces;
 using Application.Validators;
+using Common.Middlewares;
 using Common.Options;
 using FluentValidation;
 using GoogleClass.DTOs.Auth;
@@ -153,6 +154,7 @@ namespace Web
             }
 
             app.UseSwagger();
+            app.UseMiddleware<ExceptionCatchMiddleware>();
             app.UseSwaggerUI();
 
             app.UseAuthentication();

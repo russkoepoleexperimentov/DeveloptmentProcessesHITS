@@ -2,9 +2,9 @@ using Application.DTOs.Auth;
 using Application.Services.Interfaces;
 using Common;
 using GoogleClass.DTOs.Auth;
+using GoogleClass.DTOs.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 [ApiController]
 [Route("api/auth")]
@@ -17,44 +17,87 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    /// <summary>
+    /// Регистрация нового пользователя
+    /// </summary>
     [HttpPost("register")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Register(UserRegisterDto dto)
     {
-        return Ok(await _authService.RegisterAsync(dto));
+        var result = await _authService.RegisterAsync(dto);
+        return Ok(new ApiResponse<object>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
     }
 
+    /// <summary>
+    /// Выход из системы (инвалидация токена)
+    /// </summary>
     [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("logout")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Logout()
     {
-        var id = HttpContext.GetUserId();
-
-        await _authService.LogoutAsync(id.Value);
-
-        return Ok();
+        var userId = HttpContext.GetUserId()!.Value;
+        await _authService.LogoutAsync(userId);
+        return Ok(new ApiResponse<object>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = new { } // пустой объект для консистенции
+        });
     }
 
+    /// <summary>
+    /// Вход в систему
+    /// </summary>
     [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Login(UserLoginDto dto)
     {
-        return Ok(await _authService.LoginAsync(dto));
+        var result = await _authService.LoginAsync(dto);
+        return Ok(new ApiResponse<object>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
     }
 
+    /// <summary>
+    /// Обновление токена доступа
+    /// </summary>
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Refresh(string token)
     {
-        return Ok(await _authService.RefreshAsync(token));
+        var result = await _authService.RefreshAsync(token);
+        return Ok(new ApiResponse<object>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
     }
 
+    /// <summary>
+    /// Смена пароля (для авторизованного пользователя)
+    /// </summary>
     [Authorize(AuthenticationSchemes = "Bearer")]
     [HttpPost("change-password")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ChangePassword(UserChangePassword dto)
     {
-        var userId = Guid.Parse(
-            User.FindFirst("nameid")!.Value);
-
+        var userId = HttpContext.GetUserId()!.Value;
         await _authService.ChangePasswordAsync(userId, dto);
-
-        return Ok();
+        return Ok(new ApiResponse<object>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = new { }
+        });
     }
 }
