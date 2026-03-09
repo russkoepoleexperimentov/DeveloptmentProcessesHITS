@@ -3,6 +3,7 @@ using AutoMapper;
 using Common.Exceptions;
 using GoogleClass.DTOs.Common;
 using GoogleClass.DTOs.Course;
+using GoogleClass.DTOs.Course.Application.DTOs.User;
 using GoogleClass.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,21 @@ namespace Application.Services.Implementations
         {
             _context = context;
             _userManager = userManager;
+        }
+
+        public async Task<List<UserCourseDto>> GetUserCoursesAsync(Guid userId)
+        {
+            var userCourses = await _context.CourseRoles
+                .Include(cr => cr.Course)
+                .Where(cr => cr.UserId == userId)
+                .ToListAsync();
+
+            return userCourses.Select(course => new UserCourseDto()
+            {
+                Id = course.Course.Id,
+                Title = course.Course.Title,
+                Role = course.RoleType
+            }).ToList();
         }
 
         public async Task<CreateUpdateCourseResponseDto> CreateCourseAsync(Guid userId, CreateUpdateCourseRequestDto request)

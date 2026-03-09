@@ -2,13 +2,14 @@
 using Common;
 using GoogleClass.DTOs.Common;
 using GoogleClass.DTOs.Course;
+using GoogleClass.DTOs.Course.Application.DTOs.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GoogleClassroom.Controllers
 {
     [ApiController]
-    [Route("api/course")]
+    [Route("api/courses")]
     public class CourseController : ControllerBase
     {
         private readonly ICourseService _courseService;
@@ -157,6 +158,24 @@ namespace GoogleClassroom.Controllers
             var userId = HttpContext.GetUserId()!.Value;
             var result = await _courseService.JoinCourseAsync(userId, request);
             return Ok(new ApiResponse<JoinCourseResponseDto>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = result
+            });
+        }
+
+        /// <summary>
+        /// Получить список курсов текущего пользователя с указанием роли
+        /// </summary>
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<List<UserCourseDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMyCourses()
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var result = await _courseService.GetUserCoursesAsync(userId);
+            return Ok(new ApiResponse<List<UserCourseDto>>
             {
                 Type = ApiResponseType.Success,
                 Message = null,
