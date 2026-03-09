@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Application.Services.Implementations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Tests
 {
@@ -37,6 +38,90 @@ namespace Tests
 
             // Создание экземпляра сервиса (предполагаем, что конструктор принимает эти зависимости)
             _courseService = new CourseService(_context, _userManagerMock.Object);
+        }
+
+        [Fact]
+        public async Task GetUserCoursesAsync_UserHasCourses_ReturnsMappedCourses()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var course1 = new Course
+            {
+                Id = Guid.NewGuid(),
+                Title = "Course 1",
+                AuthorId = Guid.NewGuid(),
+                InviteCode = "code1"
+            };
+            var course2 = new Course
+            {
+                Id = Guid.NewGuid(),
+                Title = "Course 2",
+                AuthorId = Guid.NewGuid(),
+                InviteCode = "code2"
+            };
+
+            _context.Courses.AddRange(course1, course2);
+            _context.CourseRoles.AddRange(
+                new CourseRole { UserId = userId, CourseId = course1.Id, RoleType = UserRoleType.Teacher },
+                new CourseRole { UserId = userId, CourseId = course2.Id, RoleType = UserRoleType.Student }
+            );
+            await _context.SaveChangesAsync();
+
+            var service = new CourseService(_context, null); // остальные зависимости не важны
+
+            // Act
+            var result = await service.GetUserCoursesAsync(userId);
+
+            // Assert
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, c => c.Id == course1.Id && c.Title == course1.Title && c.Role == UserRoleType.Teacher);
+            Assert.Contains(result, c => c.Id == course2.Id && c.Title == course2.Title && c.Role == UserRoleType.Student);
+        }
+
+        [Fact]
+        public async Task GetUserCoursesAsync_UserHasNoCourses_ReturnsEmptyList()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var service = new CourseService(_context, null);
+
+            // Act
+            var result = await service.GetUserCoursesAsync(userId);
+
+            // Assert
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetUserCoursesAsync_OnlyRolesForOtherUsers_ReturnsEmptyForThisUser()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var otherUserId = Guid.NewGuid();
+            var course = new Course
+            {
+                Id = Guid.NewGuid(),
+                Title = "Course",
+                AuthorId = Guid.NewGuid(),
+                InviteCode = "code"
+            };
+
+            _context.Courses.Add(course);
+            _context.CourseRoles.Add(new CourseRole
+            {
+                UserId = otherUserId,
+                CourseId = course.Id,
+                RoleType = UserRoleType.Teacher
+            });
+            await _context.SaveChangesAsync();
+
+            var service = new CourseService(_context, null);
+
+            // Act
+            var result = await service.GetUserCoursesAsync(userId);
+
+            // Assert
+            Assert.Empty(result);
         }
 
         #region CreateCourseAsync
