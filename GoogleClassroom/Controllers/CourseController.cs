@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoogleClassroom.Controllers
 {
     [ApiController]
-    [Route("api/courses")]
+    [Route("api/course")]
     public class CourseController : ControllerBase
     {
         private readonly ICourseService _courseService;
