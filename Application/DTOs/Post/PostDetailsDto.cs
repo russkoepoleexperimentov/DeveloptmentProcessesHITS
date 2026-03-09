@@ -5,6 +5,8 @@ namespace GoogleClass.DTOs.Post;
 
 public class PostDetailsDto
 {
+    public Guid Id { get; set; }
+
     [Required]
     public PostType Type { get; set; }
 
