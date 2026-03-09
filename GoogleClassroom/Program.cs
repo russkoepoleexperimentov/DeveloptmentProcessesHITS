@@ -10,6 +10,7 @@ using FluentValidation;
 using GoogleClass.DTOs.Auth;
 using GoogleClass.DTOs.User;
 using GoogleClass.Models;
+using Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,9 @@ namespace Web
 
             builder.Services.Configure<JwtOptions>(
                 builder.Configuration.GetSection("Jwt"));
+
+            builder.Services.Configure<FileStorageOptions>(
+                builder.Configuration.GetSection("FileStorage"));
 
             builder.Services.Configure<IdentityPasswordOptions>(
                 builder.Configuration.GetSection("Identity:Password"));
@@ -111,6 +115,7 @@ namespace Web
                 .AddScoped<IUserService, UserService>()
                 .AddScoped<IAuthService, AuthService>()
                 .AddScoped<ICourseService, CourseService>()
+                .AddScoped<IFileService, FileService>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()
                 .AddScoped<IValidator<UserUpdateDto>, UserUpdateValidator>()
                 .AddScoped<IValidator<UserLoginDto>, UserLoginValidator>()
