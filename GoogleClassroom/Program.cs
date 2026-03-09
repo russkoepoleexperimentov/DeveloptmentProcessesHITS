@@ -1,4 +1,5 @@
 using Application.DTOs.Auth;
+using Application.DTOs.Post;
 using Application.Profiles;
 using Application.Services.Abstractions;
 using Application.Services.Implementations;
@@ -108,14 +109,17 @@ namespace Web
 
 
             builder.Services
+                .AddScoped<IPostService, PostService>()
                 .AddScoped<IUserService, UserService>()
                 .AddScoped<IAuthService, AuthService>()
                 .AddScoped<ICourseService, CourseService>()
+                .AddScoped<IValidator<CreateUpdatePostDto>, CreateUpdatePostValidator>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()
                 .AddScoped<IValidator<UserUpdateDto>, UserUpdateValidator>()
                 .AddScoped<IValidator<UserLoginDto>, UserLoginValidator>()
                 .AddScoped<IValidator<UserChangePassword>, ChangePasswordValidator>()
-                .AddAutoMapper(typeof(UserMapProfile));
+                .AddAutoMapper(typeof(UserMapProfile))
+                .AddAutoMapper(typeof(PostMappingProfile));
 
             builder.Services.AddSingleton<IJwtService>(sp =>
             {

@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
         {
             Type = ApiResponseType.Success,
             Message = null,
-            Data = new { } // пустой объект для консистенции
+            Data = new { }
         });
     }
 
