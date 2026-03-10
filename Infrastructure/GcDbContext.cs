@@ -20,4 +20,5 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<UserFile> UserFiles { get; set; }
     public DbSet<Solution> Solutions { get; set; }
     public DbSet<Comment> Comments { get; set; }
+    public DbSet<FilePost> FilePosts { get; set; }
 }
