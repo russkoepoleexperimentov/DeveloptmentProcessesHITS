@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.IO.Compression;
 
 public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
 {
@@ -16,6 +17,7 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<CourseRole> CourseRoles { get; set; }
     public DbSet<RegularPost> Posts { get; set; } 
     public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<UserFile> UserFiles { get; set; }
     public DbSet<Solution> Solutions { get; set; }
     public DbSet<Comment> Comments { get; set; }
 }

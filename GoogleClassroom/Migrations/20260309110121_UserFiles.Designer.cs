@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoogleClass.Migrations
 {
     [DbContext(typeof(GcDbContext))]
-    partial class GcDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260309110121_UserFiles")]
+    partial class UserFiles
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -52,67 +55,6 @@ namespace GoogleClass.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RefreshTokens");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Comment", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CommentableId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ParentCommentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Text")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommentableId");
-
-                    b.HasIndex("ParentCommentId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Comment");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Commentable", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Commentable");
-
-                    b.HasDiscriminator().HasValue("Commentable");
-
-                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("GoogleClass.Models.Course", b =>
@@ -173,33 +115,6 @@ namespace GoogleClass.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("CourseRoles");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.FilePost", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("FileId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PostId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FileId");
-
-                    b.HasIndex("PostId");
-
-                    b.ToTable("FilePost");
                 });
 
             modelBuilder.Entity("GoogleClass.Models.User", b =>
@@ -435,82 +350,6 @@ namespace GoogleClass.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("GoogleClass.Models.GenericPost", b =>
-                {
-                    b.HasBaseType("GoogleClass.Models.Commentable");
-
-                    b.Property<Guid>("AuthorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasIndex("AuthorId");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasDiscriminator().HasValue("GenericPost");
-                });
-
-            modelBuilder.Entity("Domain.Models.RegularPost", b =>
-                {
-                    b.HasBaseType("GoogleClass.Models.GenericPost");
-
-                    b.HasDiscriminator().HasValue("RegularPost");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Assignment", b =>
-                {
-                    b.HasBaseType("GoogleClass.Models.GenericPost");
-
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("MaxScore")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("SolvableAfterDeadline")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("TaskType")
-                        .HasColumnType("integer");
-
-                    b.HasDiscriminator().HasValue("Assignment");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Comment", b =>
-                {
-                    b.HasOne("GoogleClass.Models.Commentable", "Commentable")
-                        .WithMany("Comments")
-                        .HasForeignKey("CommentableId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.Comment", "ParentComment")
-                        .WithMany("Replies")
-                        .HasForeignKey("ParentCommentId");
-
-                    b.HasOne("GoogleClass.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Commentable");
-
-                    b.Navigation("ParentComment");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GoogleClass.Models.Course", b =>
                 {
                     b.HasOne("GoogleClass.Models.User", "Author")
@@ -539,25 +378,6 @@ namespace GoogleClass.Migrations
                     b.Navigation("Course");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.FilePost", b =>
-                {
-                    b.HasOne("GoogleClass.Models.UserFile", "File")
-                        .WithMany()
-                        .HasForeignKey("FileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.GenericPost", "Post")
-                        .WithMany("FilePosts")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("File");
-
-                    b.Navigation("Post");
                 });
 
             modelBuilder.Entity("GoogleClass.Models.UserFile", b =>
@@ -622,43 +442,9 @@ namespace GoogleClass.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("GoogleClass.Models.GenericPost", b =>
-                {
-                    b.HasOne("GoogleClass.Models.User", "Author")
-                        .WithMany()
-                        .HasForeignKey("AuthorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Author");
-
-                    b.Navigation("Course");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Comment", b =>
-                {
-                    b.Navigation("Replies");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.Commentable", b =>
-                {
-                    b.Navigation("Comments");
-                });
-
             modelBuilder.Entity("GoogleClass.Models.Course", b =>
                 {
                     b.Navigation("CourseRoles");
-                });
-
-            modelBuilder.Entity("GoogleClass.Models.GenericPost", b =>
-                {
-                    b.Navigation("FilePosts");
                 });
 #pragma warning restore 612, 618
         }
