@@ -16,4 +16,6 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<CourseRole> CourseRoles { get; set; }
     public DbSet<RegularPost> Posts { get; set; } 
     public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<Solution> Solutions { get; set; }
+    public DbSet<Comment> Comments { get; set; }
 }
