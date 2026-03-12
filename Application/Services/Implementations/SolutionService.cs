@@ -189,7 +189,11 @@ public class SolutionService : ISolutionService
                 Text = s.Text,
                 Score = s.Score == 0 ? null : (int)s.Score,
                 Status = s.Status,
-                Files = s.FileSolutions.Select(f => f.FileId).ToList(),
+                Files = s.FileSolutions.Select(fp => new FileDto
+                {
+                    Id = fp.FileId.ToString(),
+                    Name = fp.File.OriginalName
+                }).ToList(),
                 UpdatedDate = s.UpdatedDate
             })
             .ToListAsync();
