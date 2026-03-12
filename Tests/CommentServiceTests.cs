@@ -46,7 +46,6 @@ namespace Tests
             _service = new CommentService(
                 _context,
                 _userManager.Object,
-                _mapper.Object,
                 _addValidator.Object,
                 _editValidator.Object);
         }

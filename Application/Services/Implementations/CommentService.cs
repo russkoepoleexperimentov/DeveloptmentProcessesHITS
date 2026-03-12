@@ -56,8 +56,13 @@ public class CommentService : ICommentService
         if(solution == null)
             throw new NotFoundException("Solution not found");
         
-        if(solution.UserId != currentUserId)
-            throw new ForbiddenException("User is not an author of this solution");
+        var isTeacher = await _context.CourseRoles
+            .AnyAsync(cr => cr.CourseId == solution.Task!.CourseId &&
+                            cr.UserId == currentUserId &&
+                            cr.RoleType == UserRoleType.Teacher);
+        
+        if(solution.UserId != currentUserId && !isTeacher)
+            throw new ForbiddenException("Only teacher and an author of this solution can comment");
 
         var comment = CreateBaseComment(currentUserId, dto);
         comment.CommentableId = solutionId;
