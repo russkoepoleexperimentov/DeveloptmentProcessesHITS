@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using GoogleClass.Models;
 
 namespace GoogleClass.DTOs;
 
@@ -11,7 +12,7 @@ public class StudentSolutionDetailsDto
     public int? Score { get; set; } = null;
 
     [Required]
-    public TaskStatus Status { get; set; }
+    public SolutionStatus Status { get; set; }
 
     [Required]
     public DateTime UpdatedDate { get; set; }
