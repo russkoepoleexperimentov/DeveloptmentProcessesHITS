@@ -59,7 +59,7 @@ public class SolutionService : ISolutionService
                 TaskId = taskId,
                 UserId = currentUserId,
                 Text = dto.Text ?? "",
-                Status = SolutionStatus.PendingCheck,
+                Status = SolutionStatus.Pending,
                 CreatedDate = DateTime.UtcNow,
                 UpdatedDate = DateTime.UtcNow
             };
@@ -69,7 +69,7 @@ public class SolutionService : ISolutionService
         else
         {
             solution.Text = dto.Text ?? "";
-            solution.Status = SolutionStatus.PendingCheck;
+            solution.Status = SolutionStatus.Pending;
             solution.UpdatedDate = DateTime.UtcNow;
 
             solution.FileSolutions.Clear();

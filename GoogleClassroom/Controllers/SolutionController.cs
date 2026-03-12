@@ -10,7 +10,6 @@ namespace GoogleClassroom.Controllers;
 
 [ApiController]
 [Route("api")]
-[Authorize]
 public class SolutionController : ControllerBase
 {
     private readonly ISolutionService _solutionService;
@@ -21,6 +20,7 @@ public class SolutionController : ControllerBase
     }
 
     [HttpPut("task/{id}/solution")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SubmitSolution(Guid id, SubmitSolutionRequestDto dto)
     {
@@ -35,6 +35,7 @@ public class SolutionController : ControllerBase
     }
     
     [HttpDelete("task/{id}/solution")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteSolution(Guid id)
     {
@@ -51,6 +52,7 @@ public class SolutionController : ControllerBase
     }
     
     [HttpGet("task/{id}/solution")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<StudentSolutionDetailsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSolution(Guid id)
     {
@@ -67,6 +69,7 @@ public class SolutionController : ControllerBase
     }
     
     [HttpGet("task/{id}/solutions")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<SolutionListDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSolutionList(
         Guid id,
@@ -94,6 +97,7 @@ public class SolutionController : ControllerBase
     }
     
     [HttpPost("solution/{solutionId}/review")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ReviewSolution(Guid solutionId, UpdateSolutionRequestDto dto)
     {

@@ -10,7 +10,6 @@ namespace GoogleClassroom.Controllers;
 
 [ApiController]
 [Route("api")]
-[Authorize]
 public class CommentController : ControllerBase
 {
     private readonly ICommentService _commentService;
@@ -21,6 +20,7 @@ public class CommentController : ControllerBase
     }
 
     [HttpPost("post/{id}/comment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreatePostComment(Guid id, AddCommentRequestDto dto)
     {
@@ -35,6 +35,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpPost("solution/{id}/comment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateSolutionComment(Guid id, AddCommentRequestDto dto)
     {
@@ -49,6 +50,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpGet("post/{id}/comment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<List<CommentDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPostRootComment(Guid id)
     {
@@ -63,6 +65,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpGet("solution/{id}/comment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<List<CommentDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSolutionRootComment(Guid id)
     {
@@ -77,6 +80,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpGet("comment/{id}/replies")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<List<CommentDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCommentReplies(Guid id)
     {
@@ -91,6 +95,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpPost("comment/{id}/reply")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateCommentReplyComment(Guid id, AddCommentRequestDto dto)
     {
@@ -105,6 +110,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpPut("comment/{id}")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> EditComment(Guid id, EditCommentRequestDto dto)
     {
@@ -119,6 +125,7 @@ public class CommentController : ControllerBase
     }
     
     [HttpDelete("comment/{id}")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteComment(Guid id)
     {

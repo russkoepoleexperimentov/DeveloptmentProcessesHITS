@@ -70,12 +70,12 @@ namespace Tests
             var service = new CourseService(_context, null); // остальные зависимости не важны
 
             // Act
-            var result = await service.GetUserCoursesAsync(userId);
+            var result = await service.GetUserCoursesAsync(userId, 0, 2);
 
             // Assert
-            Assert.Equal(2, result.Count);
-            Assert.Contains(result, c => c.Id == course1.Id && c.Title == course1.Title && c.Role == UserRoleType.Teacher);
-            Assert.Contains(result, c => c.Id == course2.Id && c.Title == course2.Title && c.Role == UserRoleType.Student);
+            Assert.Equal(2, result.TotalRecords);
+            Assert.Contains(result.Records, c => c.Id == course1.Id && c.Title == course1.Title && c.Role == UserRoleType.Teacher);
+            Assert.Contains(result.Records, c => c.Id == course2.Id && c.Title == course2.Title && c.Role == UserRoleType.Student);
         }
 
         [Fact]
@@ -86,10 +86,10 @@ namespace Tests
             var service = new CourseService(_context, null);
 
             // Act
-            var result = await service.GetUserCoursesAsync(userId);
+            var result = await service.GetUserCoursesAsync(userId, 0, 1);
 
             // Assert
-            Assert.Empty(result);
+            Assert.Empty(result.Records);
         }
 
         [Fact]
@@ -118,10 +118,10 @@ namespace Tests
             var service = new CourseService(_context, null);
 
             // Act
-            var result = await service.GetUserCoursesAsync(userId);
+            var result = await service.GetUserCoursesAsync(userId, 0, 1);
 
             // Assert
-            Assert.Empty(result);
+            Assert.Empty(result.Records);
         }
 
         #region CreateCourseAsync

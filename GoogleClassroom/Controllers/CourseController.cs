@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace GoogleClassroom.Controllers
 {
     [ApiController]
-    [Route("api/course")]
+    [Route("api")]
     public class CourseController : ControllerBase
     {
         private readonly ICourseService _courseService;
@@ -22,7 +22,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Создать новый курс
         /// </summary>
-        [HttpPost]
+        [HttpPost("course")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<CreateUpdateCourseResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> CreateCourse([FromBody] CreateUpdateCourseRequestDto request)
@@ -40,7 +40,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Обновить информацию о курсе (только преподаватель)
         /// </summary>
-        [HttpPut("{id}")]
+        [HttpPut("course/{id}")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<CreateUpdateCourseResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] CreateUpdateCourseRequestDto request)
@@ -58,7 +58,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Получить информацию о курсе
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("course/{id}")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<CourseDetailsDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCourseDetails(Guid id)
@@ -76,7 +76,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Получить список участников курса (только преподаватель)
         /// </summary>
-        [HttpGet("{id}/members")]
+        [HttpGet("course/{id}/members")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<CourseMemberDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMembers(Guid id, [FromQuery] int skip = 0, [FromQuery] int take = 10, [FromQuery] string? query = null)
@@ -94,7 +94,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Изменить роль участника (только преподаватель)
         /// </summary>
-        [HttpPut("{id}/members/{userId}/role")]
+        [HttpPut("course/{id}/members/{userId}/role")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<ChangeRoleResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ChangeRole(Guid id, Guid userId, [FromBody] ChangeRoleRequestDto request)
@@ -112,7 +112,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Удалить участника из курса (только преподаватель)
         /// </summary>
-        [HttpDelete("{id}/members/{userId}")]
+        [HttpDelete("course/{id}/members/{userId}")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> RemoveMember(Guid id, Guid userId)
@@ -132,7 +132,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Выйти из курса
         /// </summary>
-        [HttpDelete("{id}/leave")]
+        [HttpDelete("course/{id}/leave")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> LeaveCourse(Guid id)
@@ -150,7 +150,7 @@ namespace GoogleClassroom.Controllers
         /// <summary>
         /// Присоединиться к курсу по инвайт-коду
         /// </summary>
-        [HttpPost("join")]
+        [HttpPost("course/join")]
         [Authorize(AuthenticationSchemes = "Bearer")]
         [ProducesResponseType(typeof(ApiResponse<JoinCourseResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> JoinCourse([FromBody] JoinCourseRequestDto request)
@@ -169,7 +169,7 @@ namespace GoogleClassroom.Controllers
         /// Получить список курсов текущего пользователя с указанием роли
         /// </summary>
         [Authorize(AuthenticationSchemes = "Bearer")]
-        [HttpGet]
+        [HttpGet("user/courses")]
         [ProducesResponseType(typeof(ApiResponse<PagedResponse<UserCourseDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMyCourses([FromQuery] int skip = 0, [FromQuery] int take = 20)
         {
