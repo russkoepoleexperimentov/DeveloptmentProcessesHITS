@@ -16,17 +16,16 @@ namespace Application.DTOs.Post
         [Required]
         public string Title { get; set; } = null!;
 
-        [Required]
         public string Text { get; set; } = null!;
 
-        public DateTime? Deadline { get; set; }
+        public DateTime? Deadline { get; set; } = null;
 
-        public int? MaxScore { get; set; } = 5; 
+        public int? MaxScore { get; set; } = null;
 
-        public TaskType? TaskType { get; set; }
+        public TaskType? TaskType { get; set; } = null;
 
-        public bool? SolvableAfterDeadline { get; set; }
+        public bool? SolvableAfterDeadline { get; set; } = null;
 
-        public List<Guid>? Files { get; set; }
+        public List<Guid>? Files { get; set; } = null;
     }
 }

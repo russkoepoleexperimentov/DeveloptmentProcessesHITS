@@ -170,12 +170,12 @@ namespace GoogleClassroom.Controllers
         /// </summary>
         [Authorize(AuthenticationSchemes = "Bearer")]
         [HttpGet]
-        [ProducesResponseType(typeof(ApiResponse<List<UserCourseDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetMyCourses()
+        [ProducesResponseType(typeof(ApiResponse<PagedResponse<UserCourseDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMyCourses([FromQuery] int skip = 0, [FromQuery] int take = 20)
         {
             var userId = HttpContext.GetUserId()!.Value;
-            var result = await _courseService.GetUserCoursesAsync(userId);
-            return Ok(new ApiResponse<List<UserCourseDto>>
+            var result = await _courseService.GetUserCoursesAsync(userId, skip, take);
+            return Ok(new ApiResponse<PagedResponse<UserCourseDto>>
             {
                 Type = ApiResponseType.Success,
                 Message = null,

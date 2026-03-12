@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api")]
-[Authorize]
 public class PostController : ControllerBase
 {
     private readonly IPostService _postService;
@@ -22,6 +21,7 @@ public class PostController : ControllerBase
     /// Создать пост или задание в курсе (только для преподавателей)
     /// </summary>
     [HttpPost("course/{courseId}/post")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreatePost(Guid courseId, CreateUpdatePostDto dto)
     {
@@ -39,6 +39,7 @@ public class PostController : ControllerBase
     /// Получить пост или задание по ID (доступно всем участникам курса)
     /// </summary>
     [HttpGet("post/{id}")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<PostDetailsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPost(Guid id)
     {
@@ -56,6 +57,7 @@ public class PostController : ControllerBase
     /// Обновить пост или задание (только для преподавателей)
     /// </summary>
     [HttpPut("post/{id}")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdatePost(Guid id, CreateUpdatePostDto dto)
     {
@@ -73,6 +75,7 @@ public class PostController : ControllerBase
     /// Удалить пост или задание (только для преподавателей)
     /// </summary>
     [HttpDelete("post/{id}")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeletePost(Guid id)
     {
@@ -90,6 +93,7 @@ public class PostController : ControllerBase
     /// Получить ленту постов и заданий курса с пагинацией (доступно всем участникам)
     /// </summary>
     [HttpGet("course/{courseId}/feed")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<FeedResponseDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCourseFeed(Guid courseId, [FromQuery] int skip = 0, [FromQuery] int take = 20)
     {

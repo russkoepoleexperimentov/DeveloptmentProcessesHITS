@@ -6,7 +6,7 @@ namespace Application.Services.Interfaces
 {
     public interface ICourseService
     {
-        Task<List<UserCourseDto>> GetUserCoursesAsync(Guid userId);
+        Task<PagedResponse<UserCourseDto>> GetUserCoursesAsync(Guid userId, int skip, int take);
         Task<CreateUpdateCourseResponseDto> CreateCourseAsync(Guid userId, CreateUpdateCourseRequestDto request);
         Task<CreateUpdateCourseResponseDto> UpdateCourseAsync(Guid currentUserId, Guid courseId, CreateUpdateCourseRequestDto request);
         Task<JoinCourseResponseDto> JoinCourseAsync(Guid userId, JoinCourseRequestDto request);

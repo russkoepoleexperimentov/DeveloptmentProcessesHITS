@@ -21,19 +21,30 @@ namespace Application.Services.Implementations
             _userManager = userManager;
         }
 
-        public async Task<List<UserCourseDto>> GetUserCoursesAsync(Guid userId)
+        public async Task<PagedResponse<UserCourseDto>> GetUserCoursesAsync(Guid userId, int skip, int take)
         {
-            var userCourses = await _context.CourseRoles
+            var userCoursesQuery =  _context.CourseRoles
                 .Include(cr => cr.Course)
-                .Where(cr => cr.UserId == userId)
-                .ToListAsync();
+                .Where(cr => cr.UserId == userId);
 
-            return userCourses.Select(course => new UserCourseDto()
+            var total = await userCoursesQuery.CountAsync();
+
+            var userCources = (await userCoursesQuery
+                .Skip(skip)
+                .Take(take)
+                .ToListAsync())
+                .Select(course => new UserCourseDto()
+                {
+                    Id = course.Course.Id,
+                    Title = course.Course.Title,
+                    Role = course.RoleType
+                }).ToList();
+
+            return new()
             {
-                Id = course.Course.Id,
-                Title = course.Course.Title,
-                Role = course.RoleType
-            }).ToList();
+                Records = userCources,
+                TotalRecords = total
+            };
         }
 
         public async Task<CreateUpdateCourseResponseDto> CreateCourseAsync(Guid userId, CreateUpdateCourseRequestDto request)

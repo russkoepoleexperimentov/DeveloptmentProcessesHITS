@@ -19,6 +19,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Web.Options;
@@ -60,7 +61,7 @@ namespace Web
                 {
                     options.JsonSerializerOptions
                         .Converters
-                        .Add(new JsonStringEnumConverter());
+                        .Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
                 });
 
 
@@ -149,6 +150,18 @@ namespace Web
                         b => b.MigrationsAssembly("GoogleClassroom")
                     ));
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowFrontend",
+                    policy =>
+                    {
+                        policy.SetIsOriginAllowed(origin => true)
+                              .AllowAnyHeader()
+                              .AllowAnyMethod()
+                              .AllowCredentials();
+                    });
+            });
+
 
             var app = builder.Build();
 
@@ -168,6 +181,7 @@ namespace Web
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseCors("AllowFrontend");
 
             app.MapControllers();
 
