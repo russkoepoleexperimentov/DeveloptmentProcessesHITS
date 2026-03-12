@@ -45,20 +45,22 @@ namespace Application.Services.Implementations
             if (userRole == null || userRole.RoleType != UserRoleType.Teacher)
                 throw new ForbiddenException("Only teachers can create posts in this course");
 
+            if (dto.Files != null && dto.Files.Any())
+                await ValidateFilesExist(dto.Files);
+
+            GenericPost post;
             if (dto.Type == PostType.POST)
             {
-                var regularPost = _mapper.Map<RegularPost>(dto);
-                regularPost.Id = Guid.NewGuid();
-                regularPost.CourseId = courseId;
-                regularPost.AuthorId = currentUserId;
-                regularPost.CreatedDate = DateTime.UtcNow;
-                regularPost.UpdatedDate = DateTime.UtcNow;
+                post = _mapper.Map<RegularPost>(dto);
+                post.Id = Guid.NewGuid();
+                post.CourseId = courseId;
+                post.AuthorId = currentUserId;
+                post.CreatedDate = DateTime.UtcNow;
+                post.UpdatedDate = DateTime.UtcNow;
 
-                _context.Posts.Add(regularPost);
-                await _context.SaveChangesAsync();
-                return new IdRequestDto { Id = regularPost.Id };
+                _context.Posts.Add((RegularPost)post);
             }
-            else 
+            else
             {
                 var assignment = _mapper.Map<Assignment>(dto);
                 assignment.Id = Guid.NewGuid();
@@ -66,24 +68,43 @@ namespace Application.Services.Implementations
                 assignment.AuthorId = currentUserId;
                 assignment.CreatedDate = DateTime.UtcNow;
                 assignment.UpdatedDate = DateTime.UtcNow;
-                assignment.TaskType = dto.TaskType.Value; 
+                assignment.TaskType = dto.TaskType.Value;
 
                 _context.Assignments.Add(assignment);
-                await _context.SaveChangesAsync();
-                return new IdRequestDto { Id = assignment.Id };
+                post = assignment;
             }
+
+            await _context.SaveChangesAsync();
+
+            if (dto.Files != null && dto.Files.Any())
+            {
+                var filePosts = dto.Files.Select(fileId => new FilePost
+                {
+                    Id = Guid.NewGuid(),
+                    PostId = post.Id,
+                    FileId = fileId
+                });
+                _context.FilePosts.AddRange(filePosts);
+                await _context.SaveChangesAsync();
+            }
+
+            return new IdRequestDto { Id = post.Id };
         }
 
         public async Task<PostDetailsDto> GetPostAsync(Guid currentUserId, Guid postId)
         {
             var post = await _context.Posts
                 .Include(p => p.Course)
+                .Include(p => p.FilePosts) 
+                    .ThenInclude(fp => fp.File)
                 .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
 
             if (post == null)
             {
                 post = await _context.Assignments
                     .Include(a => a.Course)
+                    .Include(a => a.FilePosts)
+                        .ThenInclude(fp => fp.File)
                     .FirstOrDefaultAsync(a => a.Id == postId);
             }
 
@@ -101,7 +122,8 @@ namespace Application.Services.Implementations
                 Type = post is Assignment ? PostType.TASK : PostType.POST,
                 Title = post.Title,
                 Text = post.Text,
-                UserSolution = null
+                UserSolution = null,
+                Files = post.FilePosts?.Select(fp => fp.FileId).ToList()
             };
 
             if (post is Assignment assignment)
@@ -121,12 +143,14 @@ namespace Application.Services.Implementations
 
             var post = await _context.Posts
                 .Include(p => p.Course)
+                .Include(p => p.FilePosts)
                 .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
 
             if (post == null)
             {
                 post = await _context.Assignments
                     .Include(a => a.Course)
+                    .Include(a => a.FilePosts)
                     .FirstOrDefaultAsync(a => a.Id == postId);
             }
 
@@ -144,6 +168,9 @@ namespace Application.Services.Implementations
                 throw new BadRequestException("Post type mismatch");
             }
 
+            if (dto.Files != null && dto.Files.Any())
+                await ValidateFilesExist(dto.Files);
+
             post.Title = dto.Title;
             post.Text = dto.Text;
             post.UpdatedDate = DateTime.UtcNow;
@@ -156,6 +183,22 @@ namespace Application.Services.Implementations
                 assignment.TaskType = dto.TaskType.Value;
             }
 
+            if (post.FilePosts != null && post.FilePosts.Any())
+            {
+                _context.FilePosts.RemoveRange(post.FilePosts);
+            }
+
+            if (dto.Files != null && dto.Files.Any())
+            {
+                var newFilePosts = dto.Files.Select(fileId => new FilePost
+                {
+                    Id = Guid.NewGuid(),
+                    PostId = post.Id,
+                    FileId = fileId
+                });
+                await _context.FilePosts.AddRangeAsync(newFilePosts);
+            }
+
             await _context.SaveChangesAsync();
             return new IdRequestDto { Id = post.Id };
         }
@@ -163,11 +206,13 @@ namespace Application.Services.Implementations
         public async Task<IdRequestDto> DeletePostAsync(Guid currentUserId, Guid postId)
         {
             var post = await _context.Posts
+                .Include(p => p.FilePosts)
                 .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
 
             if (post == null)
             {
                 post = await _context.Assignments
+                    .Include(a => a.FilePosts)
                     .FirstOrDefaultAsync(a => a.Id == postId);
             }
 
@@ -180,7 +225,12 @@ namespace Application.Services.Implementations
             if (userRole == null || userRole.RoleType != UserRoleType.Teacher)
                 throw new ForbiddenException("Only teachers can delete posts");
 
-            _context.Remove(post); 
+            if (post.FilePosts != null && post.FilePosts.Any())
+            {
+                _context.FilePosts.RemoveRange(post.FilePosts);
+            }
+
+            _context.Remove(post);
             await _context.SaveChangesAsync();
             return new IdRequestDto { Id = post.Id };
         }
@@ -222,6 +272,13 @@ namespace Application.Services.Implementations
                 Records = records,
                 TotalRecords = totalRecords
             };
+        }
+
+        private async Task ValidateFilesExist(IEnumerable<Guid> fileIds)
+        {
+            var existing = await _context.UserFiles.CountAsync(f => fileIds.Contains(f.Id));
+            if (existing != fileIds.Count())
+                throw new NotFoundException("One or more files not found");
         }
     }
 }
