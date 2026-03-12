@@ -9,6 +9,9 @@ public class CommentDto
 
     [Required]
     public string Text { get; set; } = null!;
+    
+    [Required]
+    public bool IsDeleted { get; set; }
 
     [Required]
     public CommentAuthorDto Author { get; set; } = null!;

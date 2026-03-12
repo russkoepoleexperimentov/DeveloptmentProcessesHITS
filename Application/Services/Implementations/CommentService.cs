@@ -115,6 +115,7 @@ public class CommentService : ICommentService
             throw new ForbiddenException("User is not an author of this comment");
         
         comment.Text = Constants.DELETED_COMMENT_TEXT;
+        comment.IsDeleted = true;
         comment.UpdatedDate = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
@@ -135,6 +136,7 @@ public class CommentService : ICommentService
             {
                 Id = c.Id,
                 Text = c.Text!,
+                IsDeleted = c.IsDeleted,
                 Author = new CommentAuthorDto
                 {
                     Id = c.User.Id,
@@ -160,6 +162,7 @@ public class CommentService : ICommentService
             {
                 Id = c.Id,
                 Text = c.Text!,
+                IsDeleted = c.IsDeleted,
                 Author = new CommentAuthorDto
                 {
                     Id = c.User.Id,
@@ -187,6 +190,7 @@ public class CommentService : ICommentService
             {
                 Id = c.Id,
                 Text = c.Text!,
+                IsDeleted = c.IsDeleted,
                 Author = new CommentAuthorDto
                 {
                     Id = c.User.Id,
