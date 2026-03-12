@@ -5,6 +5,8 @@ namespace GoogleClass.DTOs;
 
 public class UserSolutionDto
 {
+    public Guid Id { get; set; }
+
     [Required] 
     public String Text { get; set; } = null!;
     

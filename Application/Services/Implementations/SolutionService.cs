@@ -127,6 +127,7 @@ public class SolutionService : ISolutionService
 
         return new StudentSolutionDetailsDto
         {
+            Id = solution.Id,
             Text = solution.Text,
             Files = solution.FileSolutions?.Select(fp => new FileDto
             {

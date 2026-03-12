@@ -7,6 +7,7 @@ namespace GoogleClass.DTOs;
 
 public class StudentSolutionDetailsDto
 {
+    public Guid Id { get; set; }
     public string? Text { get; set; } = null;
 
     public List<FileDto>? Files { get; set; }
