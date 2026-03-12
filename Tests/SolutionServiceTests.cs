@@ -52,12 +52,7 @@ public class SolutionServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<UpdateSolutionRequestDto>(), default))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
-        _service = new SolutionService(
-            _context,
-            _userManagerMock.Object,
-            _mapperMock.Object,
-            _submitValidator.Object,
-            _updateValidator.Object);
+        _service = new(_context, _userManagerMock.Object, _mapperMock.Object, _submitValidator.Object, _updateValidator.Object);
     }
 
     [Fact]
@@ -97,7 +92,7 @@ public class SolutionServiceTests
         var solution = await _context.Solutions.FirstAsync();
 
         solution.Text.Should().Be("My solution");
-        solution.Status.Should().Be(SolutionStatus.PendingCheck);
+        solution.Status.Should().Be(SolutionStatus.Pending);
     }
 
     [Fact]
@@ -145,7 +140,7 @@ public class SolutionServiceTests
         var updated = await _context.Solutions.FirstAsync();
 
         updated.Text.Should().Be("Updated text");
-        updated.Status.Should().Be(SolutionStatus.PendingCheck);
+        updated.Status.Should().Be(SolutionStatus.Pending);
     }
 
     [Fact]
@@ -182,7 +177,7 @@ public class SolutionServiceTests
             TaskId = taskId,
             UserId = userId,
             Text = "Solution text",
-            Status = SolutionStatus.PendingCheck,
+            Status = SolutionStatus.Pending,
             UpdatedDate = DateTime.UtcNow
         };
 
@@ -192,7 +187,7 @@ public class SolutionServiceTests
         var result = await _service.GetSolutionByIdAsync(userId, taskId);
 
         result.Text.Should().Be("Solution text");
-        result.Status.Should().Be(SolutionStatus.PendingCheck);
+        result.Status.Should().Be(SolutionStatus.Pending);
     }
 
     [Fact]
@@ -231,7 +226,7 @@ public class SolutionServiceTests
             UserId = studentId,
             User = student,
             Text = "Solution text",
-            Status = SolutionStatus.PendingCheck,
+            Status = SolutionStatus.Pending,
             UpdatedDate = DateTime.UtcNow
         };
 
@@ -281,7 +276,7 @@ public class SolutionServiceTests
             Text = "newsolution",
             TaskId = taskId,
             Task = assignment,
-            Status = SolutionStatus.PendingCheck
+            Status = SolutionStatus.Pending
         };
 
         _context.Assignments.Add(assignment);

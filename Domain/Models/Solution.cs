@@ -16,7 +16,7 @@ public class Solution : Commentable
 
 public enum SolutionStatus
 {
-    PendingCheck, 
+    Pending, 
     Checked,
     Returned
 }

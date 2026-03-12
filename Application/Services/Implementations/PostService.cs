@@ -123,7 +123,11 @@ namespace Application.Services.Implementations
                 Title = post.Title,
                 Text = post.Text,
                 UserSolution = null,
-                Files = post.FilePosts?.Select(fp => fp.FileId).ToList()
+                Files = post.FilePosts?.Select(fp => new FileDto
+                {
+                    Id = fp.FileId.ToString(),
+                    Name = fp.File.OriginalName
+                }).ToList()
             };
 
             if (post is Assignment assignment)
