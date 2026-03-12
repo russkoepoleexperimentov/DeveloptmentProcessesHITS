@@ -52,7 +52,7 @@ public class SolutionServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<UpdateSolutionRequestDto>(), default))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
-        
+        _service = new(_context, _userManagerMock.Object, _mapperMock.Object, _submitValidator.Object, _updateValidator.Object);
     }
 
     [Fact]
