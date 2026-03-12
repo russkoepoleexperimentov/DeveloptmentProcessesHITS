@@ -1,4 +1,5 @@
-﻿using Application.Services.Interfaces;
+﻿using Application.DTOs.Post;
+using Application.Services.Interfaces;
 using AutoMapper;
 using Common.Exceptions;
 using FluentValidation;
@@ -8,6 +9,7 @@ using GoogleClass.DTOs.User;
 using GoogleClass.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Application.Services.Implementations;
 
@@ -126,7 +128,11 @@ public class SolutionService : ISolutionService
         return new StudentSolutionDetailsDto
         {
             Text = solution.Text,
-            Files = solution.FileSolutions.Select(f => f.FileId).ToList(),
+            Files = solution.FileSolutions?.Select(fp => new FileDto
+            {
+                Id = fp.FileId.ToString(),
+                Name = fp.File.OriginalName
+            }).ToList(),
             Score = solution.Score == 0 ? null : (int)solution.Score,
             Status = solution.Status,
             UpdatedDate = solution.UpdatedDate

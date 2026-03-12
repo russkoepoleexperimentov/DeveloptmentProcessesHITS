@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Application.DTOs.Post;
+using GoogleClass.DTOs.Post;
 using GoogleClass.Models;
 
 namespace GoogleClass.DTOs;
@@ -7,7 +9,7 @@ public class StudentSolutionDetailsDto
 {
     public string? Text { get; set; } = null;
 
-    public List<Guid>? Files { get; set; }
+    public List<FileDto>? Files { get; set; }
 
     public int? Score { get; set; } = null;
 

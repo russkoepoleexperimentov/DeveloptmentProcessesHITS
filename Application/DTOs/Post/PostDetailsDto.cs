@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Application.DTOs.Post;
 using GoogleClass.DTOs.Common;
 
 namespace GoogleClass.DTOs.Post;
@@ -16,7 +17,6 @@ public class PostDetailsDto
     [Required]
     public string Text { get; set; } = null!;
     
-    // may be not null only for tasks:
     public DateTime? Deadline { get; set; } = null;
 
     public int? MaxScore { get; set; } = null;
@@ -25,7 +25,7 @@ public class PostDetailsDto
 
     public bool? SolvableAfterDeadline { get; set; } = null;
 
-    public List<Guid>? Files { get; set; } = null;
+    public List<FileDto>? Files { get; set; }
 
     public UserSolutionDto? UserSolution { get; set; } = null;
 }

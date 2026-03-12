@@ -3,6 +3,7 @@
 public class Comment : BaseEntityWithId
 {
     public string? Text { get; set; }
+    public bool IsDeleted { get; set; } = false;
     
     public Guid UserId { get; set; }
     public virtual User User { get; set; } = null!;
