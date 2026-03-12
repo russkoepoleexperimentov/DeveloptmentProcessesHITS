@@ -22,6 +22,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using GoogleClass.DTOs;
+using GoogleClass.DTOs.Comment;
 using Web.Options;
 
 namespace Web
@@ -118,12 +120,18 @@ namespace Web
                 .AddScoped<IUserService, UserService>()
                 .AddScoped<IAuthService, AuthService>()
                 .AddScoped<ICourseService, CourseService>()
+                .AddScoped<ICommentService, CommentService>()
+                .AddScoped<ISolutionService, SolutionService>()
                 .AddScoped<IValidator<CreateUpdatePostDto>, CreateUpdatePostValidator>()
                 .AddScoped<IFileService, FileService>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()
                 .AddScoped<IValidator<UserUpdateDto>, UserUpdateValidator>()
                 .AddScoped<IValidator<UserLoginDto>, UserLoginValidator>()
                 .AddScoped<IValidator<UserChangePassword>, ChangePasswordValidator>()
+                .AddScoped<IValidator<AddCommentRequestDto>, AddCommentValidator>()
+                .AddScoped<IValidator<EditCommentRequestDto>, EditCommentValidator>()
+                .AddScoped<IValidator<SubmitSolutionRequestDto>, SubmitSolutionRequestDtoValidator>()
+                .AddScoped<IValidator<UpdateSolutionRequestDto>, UpdateSolutionRequestDtoValidator>()
                 .AddAutoMapper(typeof(UserMapProfile))
                 .AddAutoMapper(typeof(PostMappingProfile));
 

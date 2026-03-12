@@ -1,4 +1,5 @@
-﻿using Application.Services.Interfaces;
+﻿using Application.Services.Implementations;
+using Application.Services.Interfaces;
 using AutoMapper;
 using Common.Exceptions;
 using Domain.Models;
@@ -41,6 +42,13 @@ namespace Tests
                 .Options;
 
             _context = new GcDbContext(options);
+            
+            _service = new CommentService(
+                _context,
+                _userManager.Object,
+                _mapper.Object,
+                _addValidator.Object,
+                _editValidator.Object);
         }
 
         private async Task<Guid> SeedPost()
