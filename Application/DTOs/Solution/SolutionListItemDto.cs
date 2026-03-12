@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GoogleClass.DTOs.User;
+using GoogleClass.Models;
 
 namespace GoogleClass.DTOs;
 
@@ -17,7 +18,7 @@ public class SolutionListItemDto
     public int? Score { get; set; } = null;
 
     [Required]
-    public string Status { get; set; } = null!;
+    public SolutionStatus Status { get; set; }
 
     public List<Guid>? Files { get; set; }
 
