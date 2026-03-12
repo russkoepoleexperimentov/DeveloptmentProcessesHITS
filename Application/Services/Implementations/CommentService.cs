@@ -15,20 +15,17 @@ public class CommentService : ICommentService
 {
     private readonly GcDbContext _context;
     private readonly UserManager<User> _userManager;
-    private readonly IMapper _mapper;
     private readonly IValidator<AddCommentRequestDto> _addCommentValidator;
     private readonly IValidator<EditCommentRequestDto> _editCommentValidator;
 
     public CommentService(
         GcDbContext context,
         UserManager<User> userManager,
-        IMapper mapper,
         IValidator<AddCommentRequestDto> addCommentValidator,
         IValidator<EditCommentRequestDto> editCommentValidator)
     {
         _context = context;
         _userManager = userManager;
-        _mapper = mapper;
         _addCommentValidator = addCommentValidator;
         _editCommentValidator = editCommentValidator;
     }
@@ -38,7 +35,8 @@ public class CommentService : ICommentService
         await _addCommentValidator.ValidateAndThrowAsync(dto);
         
         var post = await _context.Posts.FindAsync(postId);
-        if(post == null)
+        var assignment = await _context.Assignments.FindAsync(postId);
+        if(post == null && assignment == null)
             throw new NotFoundException("Post not found");
 
         var comment = CreateBaseComment(currentUserId, dto);
@@ -126,7 +124,8 @@ public class CommentService : ICommentService
     public async Task<List<CommentDto>> GetPostRootCommentAsync(Guid currentUserId, Guid postId)
     {
         var post = await _context.Posts.FindAsync(postId);
-        if (post == null)
+        var assignment = await _context.Assignments.FindAsync(postId);
+        if (post == null && assignment == null)
             throw new NotFoundException("Post not found");
 
         var comments = await _context.Comments
@@ -202,9 +201,10 @@ public class CommentService : ICommentService
     
     private Comment CreateBaseComment(Guid currentUserId, AddCommentRequestDto dto)
     {
-        var comment = _mapper.Map<Comment>(dto);
+        var comment = new Comment();
 
         comment.Id = Guid.NewGuid();
+        comment.Text = dto.Text;
         comment.CreatedDate = DateTime.UtcNow;
         comment.UpdatedDate = DateTime.UtcNow;
         comment.UserId = currentUserId;
