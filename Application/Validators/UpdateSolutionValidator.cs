@@ -13,7 +13,7 @@ public class UpdateSolutionRequestDtoValidator : AbstractValidator<UpdateSolutio
             .When(x => x.Score.HasValue);
 
         RuleFor(x => x.Status)
-            .NotEqual(SolutionStatus.PendingCheck)
+            .NotEqual(SolutionStatus.Pending)
             .WithMessage("Teacher must set Checked or Returned status");
     }
 }

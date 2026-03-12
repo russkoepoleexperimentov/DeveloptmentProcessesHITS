@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoogleClass.Migrations
 {
     [DbContext(typeof(GcDbContext))]
-    partial class GcDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312113909_Comments")]
+    partial class Comments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,9 +68,6 @@ namespace GoogleClass.Migrations
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("ParentCommentId")
                         .HasColumnType("uuid");
@@ -626,7 +626,7 @@ namespace GoogleClass.Migrations
             modelBuilder.Entity("GoogleClass.Models.FileSolution", b =>
                 {
                     b.HasOne("GoogleClass.Models.UserFile", "File")
-                        .WithMany("FileSolutions")
+                        .WithMany()
                         .HasForeignKey("FileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -758,8 +758,6 @@ namespace GoogleClass.Migrations
             modelBuilder.Entity("GoogleClass.Models.UserFile", b =>
                 {
                     b.Navigation("FilePosts");
-
-                    b.Navigation("FileSolutions");
                 });
 
             modelBuilder.Entity("GoogleClass.Models.GenericPost", b =>

@@ -20,7 +20,7 @@ public class PostController : ControllerBase
     /// <summary>
     /// Создать пост или задание в курсе (только для преподавателей)
     /// </summary>
-    [HttpPost("course/{courseId}/post")]
+    [HttpPost("course/{courseId}/task")]
     [Authorize(AuthenticationSchemes = "Bearer")]
     [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreatePost(Guid courseId, CreateUpdatePostDto dto)
