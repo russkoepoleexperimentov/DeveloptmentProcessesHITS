@@ -161,7 +161,7 @@ namespace Tests
 
             var dto = new AddCommentRequestDto { Text = "Comment" };
 
-            await Assert.ThrowsAsync<ForbiddenException>(() =>
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 _service.CreateSolutionCommentAsync(userId, solutionId, dto));
         }
 
