@@ -1,0 +1,20 @@
+﻿using System.ComponentModel.DataAnnotations;
+using GoogleClass.Models;
+
+namespace GoogleClass.DTOs;
+
+public class TeamSolutionDto
+{
+    public Guid Id { get; set; }
+
+    [Required] 
+    public string Text { get; set; } = null!;
+    
+    [Required]
+    public uint Score { get; set; }
+    
+    public SolutionStatus Status { get; set; }
+    
+    [Required]
+    public TeamDto Team { get; set; } = null!;
+}

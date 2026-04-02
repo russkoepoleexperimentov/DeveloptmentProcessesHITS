@@ -17,8 +17,12 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<CourseRole> CourseRoles { get; set; }
     public DbSet<RegularPost> Posts { get; set; } 
     public DbSet<Assignment> Assignments { get; set; }
+    public DbSet<TeamAssignment> TeamAssignments { get; set; }
     public DbSet<UserFile> UserFiles { get; set; }
     public DbSet<Solution> Solutions { get; set; }
     public DbSet<Comment> Comments { get; set; }
     public DbSet<FilePost> FilePosts { get; set; }
+    public DbSet<TeamSolution> TeamSolutions { get; set; }
+    public DbSet<FileTeamSolution> FileTeamSolutions { get; set; }
+    public DbSet<Team> Teams { get; set; }
 }

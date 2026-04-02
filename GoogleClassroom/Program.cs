@@ -122,6 +122,7 @@ namespace Web
                 .AddScoped<ICourseService, CourseService>()
                 .AddScoped<ICommentService, CommentService>()
                 .AddScoped<ISolutionService, SolutionService>()
+                .AddScoped<ITeamSolutionService, TeamSolutionService>()
                 .AddScoped<IValidator<CreateUpdatePostDto>, CreateUpdatePostValidator>()
                 .AddScoped<IFileService, FileService>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()
@@ -132,6 +133,8 @@ namespace Web
                 .AddScoped<IValidator<EditCommentRequestDto>, EditCommentValidator>()
                 .AddScoped<IValidator<SubmitSolutionRequestDto>, SubmitSolutionRequestDtoValidator>()
                 .AddScoped<IValidator<UpdateSolutionRequestDto>, UpdateSolutionRequestDtoValidator>()
+                .AddScoped<IValidator<SubmitTeamSolutionRequestDto>, SubmitTeamSolutionValidator>()
+                .AddScoped<IValidator<UpdateTeamSolutionRequestDto>, UpdateTeamSolutionValidator>()
                 .AddAutoMapper(typeof(UserMapProfile))
                 .AddAutoMapper(typeof(PostMappingProfile));
 

@@ -4,6 +4,7 @@ using AutoMapper;
 using Common.Exceptions;
 using Domain.Models;
 using FluentValidation;
+using GoogleClass.DTOs;
 using GoogleClass.DTOs.Common;
 using GoogleClass.DTOs.Course;
 using GoogleClass.DTOs.Post;
@@ -48,44 +49,19 @@ namespace Application.Services.Implementations
             if (dto.Files != null && dto.Files.Any())
                 await ValidateFilesExist(dto.Files);
 
-            GenericPost post;
-            if (dto.Type == PostType.POST)
+            GenericPost post = dto.Type switch
             {
-                post = _mapper.Map<RegularPost>(dto);
-                post.Id = Guid.NewGuid();
-                post.CourseId = courseId;
-                post.AuthorId = currentUserId;
-                post.CreatedDate = DateTime.UtcNow;
-                post.UpdatedDate = DateTime.UtcNow;
-
-                _context.Posts.Add((RegularPost)post);
-            }
-            else
-            {
-                var assignment = _mapper.Map<Assignment>(dto);
-                assignment.Id = Guid.NewGuid();
-                assignment.CourseId = courseId;
-                assignment.AuthorId = currentUserId;
-                assignment.CreatedDate = DateTime.UtcNow;
-                assignment.UpdatedDate = DateTime.UtcNow;
-                assignment.TaskType = dto.TaskType.Value;
-
-                _context.Assignments.Add(assignment);
-                post = assignment;
-            }
+                PostType.POST => CreateRegularPost(dto, courseId, currentUserId),
+                PostType.TASK => CreateAssignment(dto, courseId, currentUserId),
+                PostType.TEAM_TASK => CreateTeamAssignment(dto, courseId, currentUserId),
+                _ => throw new BadRequestException("Invalid post type")
+            };
 
             await _context.SaveChangesAsync();
 
             if (dto.Files != null && dto.Files.Any())
             {
-                var filePosts = dto.Files.Select(fileId => new FilePost
-                {
-                    Id = Guid.NewGuid(),
-                    PostId = post.Id,
-                    FileId = fileId
-                });
-                _context.FilePosts.AddRange(filePosts);
-                await _context.SaveChangesAsync();
+                await AddFilesToPost(post.Id, dto.Files);
             }
 
             return new IdRequestDto { Id = post.Id };
@@ -93,20 +69,7 @@ namespace Application.Services.Implementations
 
         public async Task<PostDetailsDto> GetPostAsync(Guid currentUserId, Guid postId)
         {
-            var post = await _context.Posts
-                .Include(p => p.Course)
-                .Include(p => p.FilePosts) 
-                    .ThenInclude(fp => fp.File)
-                .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
-
-            if (post == null)
-            {
-                post = await _context.Assignments
-                    .Include(a => a.Course)
-                    .Include(a => a.FilePosts)
-                        .ThenInclude(fp => fp.File)
-                    .FirstOrDefaultAsync(a => a.Id == postId);
-            }
+            var post = await FindPostById(postId, includeFiles: true);
 
             if (post == null)
                 throw new NotFoundException("Post not found");
@@ -116,26 +79,61 @@ namespace Application.Services.Implementations
             if (!isMember)
                 throw new ForbiddenException("You are not a member of this course");
 
-            var response = new PostDetailsDto
-            {
-                Id = post.Id,
-                Type = post is Assignment ? PostType.TASK : PostType.POST,
-                Title = post.Title,
-                Text = post.Text,
-                UserSolution = null,
-                Files = post.FilePosts?.Select(fp => new FileDto
-                {
-                    Id = fp.FileId.ToString(),
-                    Name = fp.File.OriginalName
-                }).ToList()
-            };
-
+            var response = MapToDetailsDto(post);
+            
             if (post is Assignment assignment)
             {
-                response.Deadline = assignment.Deadline;
-                response.MaxScore = (int?)assignment.MaxScore;
-                response.SolvableAfterDeadline = assignment.SolvableAfterDeadline;
-                response.TaskType = assignment.TaskType;
+                var solution = await _context.Solutions
+                    .FirstOrDefaultAsync(s => s.TaskId == assignment.Id && s.UserId == currentUserId);
+
+                if (solution != null)
+                {
+                    response.UserSolution = new UserSolutionDto
+                    {
+                        Id = solution.Id,
+                        Text = solution.Text,
+                        Score = solution.Score,
+                        Status = solution.Status
+                    };
+                }
+            }
+            
+            if (post is TeamAssignment teamAssignment)
+            {
+                var team = await _context.Teams
+                    .Include(t => t.Members)
+                        .ThenInclude(m => m.User)
+                    .Where(t => t.CourseId == teamAssignment.CourseId && 
+                               t.Members.Any(m => m.UserId == currentUserId))
+                    .FirstOrDefaultAsync();
+
+                if (team != null)
+                {
+                    var teamSolution = await _context.TeamSolutions
+                        .FirstOrDefaultAsync(s => s.TaskId == teamAssignment.Id && s.TeamId == team.Id);
+
+                    if (teamSolution != null)
+                    {
+                        response.TeamSolution = new TeamSolutionDto
+                        {
+                            Id = teamSolution.Id,
+                            Text = teamSolution.Text,
+                            Score = teamSolution.Score,
+                            Status = teamSolution.Status,
+                            Team = new TeamDto
+                            {
+                                Id = team.Id,
+                                Name = team.Name,
+                                Members = team.Members.Select(m => new TeamMemberDto
+                                {
+                                    UserId = m.UserId,
+                                    Credentials = m.User.Credentials,
+                                    Role = m.Role
+                                }).ToList()
+                            }
+                        };
+                    }
+                }
             }
 
             return response;
@@ -145,18 +143,7 @@ namespace Application.Services.Implementations
         {
             await _validator.ValidateAndThrowAsync(dto);
 
-            var post = await _context.Posts
-                .Include(p => p.Course)
-                .Include(p => p.FilePosts)
-                .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
-
-            if (post == null)
-            {
-                post = await _context.Assignments
-                    .Include(a => a.Course)
-                    .Include(a => a.FilePosts)
-                    .FirstOrDefaultAsync(a => a.Id == postId);
-            }
+            var post = await FindPostById(postId, includeFiles: true);
 
             if (post == null)
                 throw new NotFoundException("Post not found");
@@ -165,43 +152,27 @@ namespace Application.Services.Implementations
                 .FirstOrDefaultAsync(cr => cr.CourseId == post.CourseId && cr.UserId == currentUserId);
             if (userRole == null || userRole.RoleType != UserRoleType.Teacher)
                 throw new ForbiddenException("Only teachers can update posts");
-
-            if ((dto.Type == PostType.POST && post is Assignment) ||
-                (dto.Type == PostType.TASK && post is not Assignment))
-            {
-                throw new BadRequestException("Post type mismatch");
-            }
+            
+            ValidateTypeMatch(post, dto.Type);
 
             if (dto.Files != null && dto.Files.Any())
                 await ValidateFilesExist(dto.Files);
-
+            
             post.Title = dto.Title;
             post.Text = dto.Text;
             post.UpdatedDate = DateTime.UtcNow;
-
-            if (post is Assignment assignment && dto.Type == PostType.TASK)
+            
+            switch (post)
             {
-                assignment.Deadline = dto.Deadline;
-                assignment.MaxScore = (uint)(dto.MaxScore ?? 5);
-                assignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
-                assignment.TaskType = dto.TaskType.Value;
+                case Assignment assignment when dto.Type == PostType.TASK:
+                    UpdateAssignment(assignment, dto);
+                    break;
+                case TeamAssignment teamAssignment when dto.Type == PostType.TEAM_TASK:
+                    UpdateTeamAssignment(teamAssignment, dto);
+                    break;
             }
-
-            if (post.FilePosts != null && post.FilePosts.Any())
-            {
-                _context.FilePosts.RemoveRange(post.FilePosts);
-            }
-
-            if (dto.Files != null && dto.Files.Any())
-            {
-                var newFilePosts = dto.Files.Select(fileId => new FilePost
-                {
-                    Id = Guid.NewGuid(),
-                    PostId = post.Id,
-                    FileId = fileId
-                });
-                await _context.FilePosts.AddRangeAsync(newFilePosts);
-            }
+            
+            await UpdatePostFiles(post, dto.Files);
 
             await _context.SaveChangesAsync();
             return new IdRequestDto { Id = post.Id };
@@ -209,23 +180,13 @@ namespace Application.Services.Implementations
 
         public async Task<IdRequestDto> DeletePostAsync(Guid currentUserId, Guid postId)
         {
-            var post = await _context.Posts
-                .Include(p => p.FilePosts)
-                .FirstOrDefaultAsync(p => p.Id == postId) as GenericPost;
-
-            if (post == null)
-            {
-                post = await _context.Assignments
-                    .Include(a => a.FilePosts)
-                    .FirstOrDefaultAsync(a => a.Id == postId);
-            }
+            var post = await FindPostById(postId, includeFiles: true);
 
             if (post == null)
                 throw new NotFoundException("Post not found");
 
-            var courseId = post.CourseId;
             var userRole = await _context.CourseRoles
-                .FirstOrDefaultAsync(cr => cr.CourseId == courseId && cr.UserId == currentUserId);
+                .FirstOrDefaultAsync(cr => cr.CourseId == post.CourseId && cr.UserId == currentUserId);
             if (userRole == null || userRole.RoleType != UserRoleType.Teacher)
                 throw new ForbiddenException("Only teachers can delete posts");
 
@@ -254,7 +215,13 @@ namespace Application.Services.Implementations
                 .Where(a => a.CourseId == courseId)
                 .Select(a => new { a.Id, a.Title, a.CreatedDate, Type = "task" });
 
-            var union = postsQuery.Union(assignmentsQuery)
+            var teamAssignmentsQuery = _context.TeamAssignments
+                .Where(ta => ta.CourseId == courseId)
+                .Select(ta => new { ta.Id, ta.Title, ta.CreatedDate, Type = "team_task" });
+
+            var union = postsQuery
+                .Union(assignmentsQuery)
+                .Union(teamAssignmentsQuery)
                 .OrderByDescending(x => x.CreatedDate);
 
             var totalRecords = await union.CountAsync();
@@ -267,7 +234,8 @@ namespace Application.Services.Implementations
                     Id = x.Id,
                     Title = x.Title,
                     CreatedDate = x.CreatedDate,
-                    Type = x.Type == "post" ? PostType.POST : PostType.TASK
+                    Type = x.Type == "post" ? PostType.POST :
+                        x.Type == "task" ? PostType.TASK : PostType.TEAM_TASK
                 })
                 .ToListAsync();
 
@@ -278,11 +246,192 @@ namespace Application.Services.Implementations
             };
         }
 
+        #region Private Helpers
+
+        private RegularPost CreateRegularPost(CreateUpdatePostDto dto, Guid courseId, Guid authorId)
+        {
+            var post = _mapper.Map<RegularPost>(dto);
+            post.Id = Guid.NewGuid();
+            post.CourseId = courseId;
+            post.AuthorId = authorId;
+            post.CreatedDate = DateTime.UtcNow;
+            post.UpdatedDate = DateTime.UtcNow;
+
+            _context.Posts.Add(post);
+            return post;
+        }
+
+        private Assignment CreateAssignment(CreateUpdatePostDto dto, Guid courseId, Guid authorId)
+        {
+            var assignment = _mapper.Map<Assignment>(dto);
+            assignment.Id = Guid.NewGuid();
+            assignment.CourseId = courseId;
+            assignment.AuthorId = authorId;
+            assignment.CreatedDate = DateTime.UtcNow;
+            assignment.UpdatedDate = DateTime.UtcNow;
+            assignment.TaskType = dto.TaskType!.Value;
+            assignment.MaxScore = (uint)(dto.MaxScore ?? 5);
+            assignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
+
+            _context.Assignments.Add(assignment);
+            return assignment;
+        }
+
+        private TeamAssignment CreateTeamAssignment(CreateUpdatePostDto dto, Guid courseId, Guid authorId)
+        {
+            var teamAssignment = new TeamAssignment
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                AuthorId = authorId,
+                Title = dto.Title,
+                Text = dto.Text ?? string.Empty,
+                CreatedDate = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow,
+                Deadline = dto.Deadline,
+                MaxScore = (uint)(dto.MaxScore ?? 5),
+                SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false,
+                MinTeamSize = dto.MinTeamSize ?? 2,
+                MaxTeamSize = dto.MaxTeamSize ?? 5
+            };
+
+            _context.TeamAssignments.Add(teamAssignment);
+            return teamAssignment;
+        }
+
+        private void UpdateAssignment(Assignment assignment, CreateUpdatePostDto dto)
+        {
+            assignment.Deadline = dto.Deadline;
+            assignment.MaxScore = (uint)(dto.MaxScore ?? 5);
+            assignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
+            assignment.TaskType = dto.TaskType!.Value;
+        }
+
+        private void UpdateTeamAssignment(TeamAssignment teamAssignment, CreateUpdatePostDto dto)
+        {
+            teamAssignment.Deadline = dto.Deadline;
+            teamAssignment.MaxScore = (uint)(dto.MaxScore ?? 5);
+            teamAssignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
+            teamAssignment.MinTeamSize = dto.MinTeamSize ?? teamAssignment.MinTeamSize;
+            teamAssignment.MaxTeamSize = dto.MaxTeamSize ?? teamAssignment.MaxTeamSize;
+        }
+
+        private async Task<GenericPost?> FindPostById(Guid postId, bool includeFiles = false)
+        {
+            var postsQuery = _context.Posts.AsQueryable();
+            if (includeFiles)
+                postsQuery = postsQuery.Include(p => p.FilePosts).ThenInclude(fp => fp.File);
+
+            var post = await postsQuery.FirstOrDefaultAsync(p => p.Id == postId);
+            if (post != null) return post;
+            
+            var assignmentsQuery = _context.Assignments.AsQueryable();
+            if (includeFiles)
+                assignmentsQuery = assignmentsQuery.Include(a => a.FilePosts).ThenInclude(fp => fp.File);
+
+            var assignment = await assignmentsQuery.FirstOrDefaultAsync(a => a.Id == postId);
+            if (assignment != null) return assignment;
+            
+            var teamAssignmentsQuery = _context.TeamAssignments.AsQueryable();
+            if (includeFiles)
+                teamAssignmentsQuery = teamAssignmentsQuery.Include(ta => ta.FilePosts).ThenInclude(fp => fp.File);
+
+            return await teamAssignmentsQuery.FirstOrDefaultAsync(ta => ta.Id == postId);
+        }
+
+        private void ValidateTypeMatch(GenericPost post, PostType requestedType)
+        {
+            var actualType = post switch
+            {
+                TeamAssignment => PostType.TEAM_TASK,
+                Assignment => PostType.TASK,
+                _ => PostType.POST
+            };
+
+            if (actualType != requestedType)
+                throw new BadRequestException($"Post type mismatch. Expected {actualType}, got {requestedType}");
+        }
+
+        private PostDetailsDto MapToDetailsDto(GenericPost post)
+        {
+            var response = new PostDetailsDto
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Text = post.Text,
+                Files = post.FilePosts?.Select(fp => new FileDto
+                {
+                    Id = fp.FileId.ToString(),
+                    Name = fp.File.OriginalName
+                }).ToList()
+            };
+
+            switch (post)
+            {
+                case TeamAssignment teamAssignment:
+                    response.Type = PostType.TEAM_TASK;
+                    response.Deadline = teamAssignment.Deadline;
+                    response.MaxScore = (int?)teamAssignment.MaxScore;
+                    response.SolvableAfterDeadline = teamAssignment.SolvableAfterDeadline;
+                    response.MinTeamSize = teamAssignment.MinTeamSize;
+                    response.MaxTeamSize = teamAssignment.MaxTeamSize;
+                    break;
+
+                case Assignment assignment:
+                    response.Type = PostType.TASK;
+                    response.Deadline = assignment.Deadline;
+                    response.MaxScore = (int?)assignment.MaxScore;
+                    response.SolvableAfterDeadline = assignment.SolvableAfterDeadline;
+                    response.TaskType = assignment.TaskType;
+                    break;
+
+                default:
+                    response.Type = PostType.POST;
+                    break;
+            }
+
+            return response;
+        }
+
+        private async Task AddFilesToPost(Guid postId, List<Guid> fileIds)
+        {
+            var filePosts = fileIds.Select(fileId => new FilePost
+            {
+                Id = Guid.NewGuid(),
+                PostId = postId,
+                FileId = fileId
+            });
+            _context.FilePosts.AddRange(filePosts);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task UpdatePostFiles(GenericPost post, List<Guid>? fileIds)
+        {
+            if (post.FilePosts != null && post.FilePosts.Any())
+            {
+                _context.FilePosts.RemoveRange(post.FilePosts);
+            }
+
+            if (fileIds != null && fileIds.Any())
+            {
+                var newFilePosts = fileIds.Select(fileId => new FilePost
+                {
+                    Id = Guid.NewGuid(),
+                    PostId = post.Id,
+                    FileId = fileId
+                });
+                await _context.FilePosts.AddRangeAsync(newFilePosts);
+            }
+        }
+
         private async Task ValidateFilesExist(IEnumerable<Guid> fileIds)
         {
-            var existing = await _context.UserFiles.CountAsync(f => fileIds.Contains(f.Id));
-            if (existing != fileIds.Count())
+            var fileIdsList = fileIds.ToList();
+            var existing = await _context.UserFiles.CountAsync(f => fileIdsList.Contains(f.Id));
+            if (existing != fileIdsList.Count)
                 throw new NotFoundException("One or more files not found");
         }
+
+        #endregion
     }
 }

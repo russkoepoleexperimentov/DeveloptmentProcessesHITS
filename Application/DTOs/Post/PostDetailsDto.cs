@@ -26,6 +26,10 @@ public class PostDetailsDto
     public bool? SolvableAfterDeadline { get; set; } = null;
 
     public List<FileDto>? Files { get; set; }
-
+    
     public UserSolutionDto? UserSolution { get; set; } = null;
+    
+    public int? MinTeamSize { get; set; } = null;
+    public int? MaxTeamSize { get; set; } = null;
+    public TeamSolutionDto? TeamSolution { get; set; } = null;
 }

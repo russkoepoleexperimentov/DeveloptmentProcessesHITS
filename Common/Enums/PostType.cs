@@ -3,5 +3,6 @@
 public enum PostType
 {
     POST,
-    TASK
+    TASK,
+    TEAM_TASK
 }

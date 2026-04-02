@@ -18,6 +18,18 @@ public class CreateUpdatePostValidator : AbstractValidator<CreateUpdatePostDto>
                 .Must(t => t == TaskType.Mandatory || t == TaskType.Optional);
             RuleFor(x => x.SolvableAfterDeadline).NotNull();
         });
+        
+        When(x => x.Type == PostType.TEAM_TASK, () =>
+        {
+            RuleFor(x => x.MaxScore).InclusiveBetween(1, 100);
+            RuleFor(x => x.MinTeamSize)
+                .GreaterThanOrEqualTo(1)
+                .When(x => x.MinTeamSize.HasValue);
+            RuleFor(x => x.MaxTeamSize)
+                .GreaterThanOrEqualTo(x => x.MinTeamSize ?? 1)
+                .When(x => x.MaxTeamSize.HasValue)
+                .WithMessage("MaxTeamSize must be >= MinTeamSize");
+        });
 
         When(x => x.Type == PostType.POST, () =>
         {

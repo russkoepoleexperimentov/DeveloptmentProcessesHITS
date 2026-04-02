@@ -1,10 +1,5 @@
 ﻿using GoogleClass.DTOs.Common;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.DTOs.Post
 {
@@ -27,5 +22,8 @@ namespace Application.DTOs.Post
         public bool? SolvableAfterDeadline { get; set; } = null;
 
         public List<Guid>? Files { get; set; } = null;
+        
+        public int? MinTeamSize { get; set; } = null;
+        public int? MaxTeamSize { get; set; } = null;
     }
 }
