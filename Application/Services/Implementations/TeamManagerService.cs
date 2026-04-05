@@ -297,6 +297,23 @@ namespace Application.Services.Implementations
             await Task.CompletedTask;
         }
 
+        public async Task<List<TeamDto>> GetTeamsForStudentAsync(Guid assignmentId, Guid studentId)
+        {
+            var assignment = await _context.TeamAssignments.FindAsync(assignmentId);
+            if (assignment == null) throw new NotFoundException("Assignment not found");
+
+            var isMember = await _context.CourseRoles
+                .AnyAsync(r => r.CourseId == assignment.CourseId && r.UserId == studentId);
+            if (!isMember) throw new ForbiddenException("You are not a member of this course");
+
+            var teams = await _context.Teams
+                .Include(t => t.Members).ThenInclude(m => m.User)
+                .Where(t => t.AssignmentId == assignmentId)
+                .ToListAsync();
+
+            return teams.Select(MapToTeamDto).ToList();
+        }
+
         private async Task ReassignCaptainByStrategyAsync(Guid teamId, TeamAssignment assignment)
         {
             var team = await _context.Teams

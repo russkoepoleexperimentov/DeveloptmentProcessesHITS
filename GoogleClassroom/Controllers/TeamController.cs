@@ -100,6 +100,25 @@ namespace GoogleClassroom.Controllers
         }
 
         /// <summary>
+        /// Получить список всех команд задания (для студента)
+        /// </summary>
+        [HttpGet("team-task/{assignmentId}/teams")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<List<TeamDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTeamsForStudent(Guid assignmentId)
+        {
+            var userId = HttpContext.GetUserId()!.Value;
+            var teams = await _teamManager.GetTeamsForStudentAsync(assignmentId, userId);
+            return Ok(new ApiResponse<List<TeamDto>>
+            {
+                Type = ApiResponseType.Success,
+                Message = null,
+                Data = teams
+            });
+        }
+
+
+        /// <summary>
         /// Учитель: принудительно добавить студента в команду
         /// </summary>
         [HttpPost("teacher/teams/{teamId}/add-student/{studentId}")]
