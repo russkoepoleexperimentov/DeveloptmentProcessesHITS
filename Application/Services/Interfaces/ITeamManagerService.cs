@@ -14,7 +14,7 @@ namespace Application.Services.Interfaces
         Task<List<TeamDto>> GetTeamsForAssignmentAsync(Guid assignmentId, Guid teacherId);
         Task<TeamDto?> GetMyTeamForAssignmentAsync(Guid assignmentId, Guid studentId);
         Task<bool> IsCaptainAsync(Guid teamId, Guid userId);
-
+        Task SetFixedCaptainAsync(Guid teamId, Guid? studentId, Guid teacherId);
         Task StartVotingAsync(Guid teamId, Guid initiatorId);
         Task CastVoteAsync(Guid teamId, Guid candidateId, Guid voterId);
     }

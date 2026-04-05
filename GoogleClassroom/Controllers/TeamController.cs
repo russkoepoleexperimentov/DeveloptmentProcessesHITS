@@ -73,6 +73,14 @@ namespace GoogleClassroom.Controllers
             });
         }
 
+        [HttpPost("teacher/teams/{teamId}/fixed-captain")]
+        public async Task<IActionResult> SetFixedCaptain(Guid teamId, [FromBody] Guid studentId)
+        {
+            var teacherId = HttpContext.GetUserId()!.Value;
+            await _teamManager.SetFixedCaptainAsync(teamId, studentId, teacherId);
+            return Ok(new ApiResponse<object> { Type = ApiResponseType.Success, Message = "Fixed captain set" });
+        }
+
         /// <summary>
         /// Учитель: переименовать команду
         /// </summary>

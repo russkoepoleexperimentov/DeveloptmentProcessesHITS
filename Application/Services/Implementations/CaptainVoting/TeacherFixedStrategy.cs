@@ -13,8 +13,8 @@ namespace Application.Services.Implementations.CaptainVoting
     {
         public Task<Guid?> DetermineCaptainAsync(Team team, TeamAssignment assignment)
         {
-            if (assignment.FixedCaptainId.HasValue && team.Members.Any(m => m.UserId == assignment.FixedCaptainId.Value))
-                return Task.FromResult(assignment.FixedCaptainId);
+            if (team.FixedCaptainId.HasValue && team.Members.Any(m => m.UserId == team.FixedCaptainId.Value))
+                return Task.FromResult(team.FixedCaptainId);
             return Task.FromResult<Guid?>(null);
         }
         public bool CanStudentTransfer => false;

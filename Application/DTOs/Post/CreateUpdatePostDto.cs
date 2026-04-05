@@ -23,7 +23,6 @@ namespace Application.DTOs.Post
         public int? MaxTeamSize { get; set; }
 
         public CaptainSelectionMode? CaptainMode { get; set; }
-        public Guid? FixedCaptainId { get; set; }
         public int? VotingDurationHours { get; set; }
 
         public bool? TeacherCreatesTeams { get; set; }       

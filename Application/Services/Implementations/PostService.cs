@@ -273,7 +273,6 @@ namespace Application.Services.Implementations
                 MinTeamSize = dto.MinTeamSize ?? 2,
                 MaxTeamSize = dto.MaxTeamSize ?? 5,
                 CaptainMode = dto.CaptainMode ?? CaptainSelectionMode.FirstMember,
-                FixedCaptainId = dto.FixedCaptainId,
                 VotingDurationHours = dto.VotingDurationHours,
                 PredefinedTeamsCount = dto.PredefinedTeamsCount ?? 0,
                 AllowJoinTeam = dto.AllowJoinTeam ?? true,
@@ -296,7 +295,6 @@ namespace Application.Services.Implementations
             teamAssignment.MinTeamSize = dto.MinTeamSize ?? teamAssignment.MinTeamSize;
             teamAssignment.MaxTeamSize = dto.MaxTeamSize ?? teamAssignment.MaxTeamSize;
             if (dto.CaptainMode.HasValue) teamAssignment.CaptainMode = dto.CaptainMode.Value;
-            if (dto.FixedCaptainId.HasValue) teamAssignment.FixedCaptainId = dto.FixedCaptainId;
             if (dto.VotingDurationHours.HasValue) teamAssignment.VotingDurationHours = dto.VotingDurationHours;
             if (dto.PredefinedTeamsCount.HasValue) teamAssignment.PredefinedTeamsCount = dto.PredefinedTeamsCount.Value;
             if (dto.AllowJoinTeam.HasValue) teamAssignment.AllowJoinTeam = dto.AllowJoinTeam.Value;
@@ -334,8 +332,8 @@ namespace Application.Services.Implementations
                         Id = Guid.NewGuid(),
                         CourseId = assignment.CourseId,
                         AssignmentId = assignment.Id,
-                        CreatorId = Guid.Empty,
-                        Name = $"Команда {i}"
+                        Name = $"Команда {i}",
+                        FixedCaptainId = null
                     });
                 }
             }
@@ -361,20 +359,18 @@ namespace Application.Services.Implementations
                 .Where(t => t.AssignmentId == sourceAssignmentId)
                 .ToListAsync();
 
-            if (!sourceTeams.Any()) return;
-
-            foreach (var sourceTeam in sourceTeams)
+            foreach (var srcTeam in sourceTeams)
             {
                 var newTeam = new Team
                 {
                     Id = Guid.NewGuid(),
                     CourseId = newAssignment.CourseId,
                     AssignmentId = newAssignment.Id,
-                    CreatorId = sourceTeam.CreatorId,
-                    Name = sourceTeam.Name
+                    Name = srcTeam.Name,
+                    FixedCaptainId = srcTeam.FixedCaptainId 
                 };
                 _context.Teams.Add(newTeam);
-                foreach (var member in sourceTeam.Members)
+                foreach (var member in srcTeam.Members)
                 {
                     _context.TeamMembers.Add(new TeamMember
                     {

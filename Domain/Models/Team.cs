@@ -9,8 +9,7 @@ namespace GoogleClass.Models
         public virtual Course Course { get; set; } = null!;
         public Guid AssignmentId { get; set; } 
         public virtual TeamAssignment Assignment { get; set; } = null!;
-        public Guid CreatorId { get; set; }
-        public virtual User Creator { get; set; } = null!;
+        public Guid? FixedCaptainId { get; set; }
 
         public virtual ICollection<TeamMember> Members { get; set; } = new List<TeamMember>();
         public virtual ICollection<TeamSolution> TeamSolutions { get; set; } = new List<TeamSolution>();

@@ -229,6 +229,19 @@ namespace Application.Services.Implementations
             await _context.SaveChangesAsync();
         }
 
+        public async Task SetFixedCaptainAsync(Guid teamId, Guid? studentId, Guid teacherId)
+        {
+            if (!await IsTeacherOfTeamAsync(teamId, teacherId))
+                throw new ForbiddenException("Only teacher can set fixed captain");
+            var team = await _context.Teams.FindAsync(teamId);
+            if (team == null) throw new NotFoundException("Team not found");
+            var assignment = await _context.TeamAssignments.FindAsync(team.AssignmentId);
+            if (assignment?.CaptainMode != CaptainSelectionMode.TeacherFixed)
+                throw new BadRequestException("Captain mode is not TeacherFixed");
+            team.FixedCaptainId = studentId;
+            await _context.SaveChangesAsync();
+            await ReassignCaptainByStrategyAsync(teamId, assignment);
+        }
         public async Task CastVoteAsync(Guid teamId, Guid candidateId, Guid voterId)
         {
             var team = await _context.Teams
