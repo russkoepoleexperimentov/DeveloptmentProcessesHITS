@@ -1,4 +1,5 @@
 ﻿using Domain.Models;
+using Domain.Models.Domain.Models;
 using GoogleClass.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -12,6 +13,8 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
     }
 
+    public DbSet<TeamMember> TeamMembers { get; set; }
+    public DbSet<CaptainVote> CaptainVotes { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Course> Courses { get; set; }
     public DbSet<CourseRole> CourseRoles { get; set; }

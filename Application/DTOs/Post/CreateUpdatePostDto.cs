@@ -13,17 +13,26 @@ namespace Application.DTOs.Post
 
         public string Text { get; set; } = null!;
 
-        public DateTime? Deadline { get; set; } = null;
+        public DateTime? Deadline { get; set; }
+        public int? MaxScore { get; set; }
+        public TaskType? TaskType { get; set; }
+        public bool? SolvableAfterDeadline { get; set; }
+        public List<Guid>? Files { get; set; }
 
-        public int? MaxScore { get; set; } = null;
+        public int? MinTeamSize { get; set; }
+        public int? MaxTeamSize { get; set; }
 
-        public TaskType? TaskType { get; set; } = null;
+        public CaptainSelectionMode? CaptainMode { get; set; }
+        public Guid? FixedCaptainId { get; set; }
+        public int? VotingDurationHours { get; set; }
 
-        public bool? SolvableAfterDeadline { get; set; } = null;
+        public bool? TeacherCreatesTeams { get; set; }       
+        public int? PredefinedTeamsCount { get; set; }
+        public bool? AllowJoinTeam { get; set; } 
+        public bool? AllowLeaveTeam { get; set; } 
+        public bool? AllowStudentTransferCaptain { get; set; } 
 
-        public List<Guid>? Files { get; set; } = null;
-        
-        public int? MinTeamSize { get; set; } = null;
-        public int? MaxTeamSize { get; set; } = null;
+        public bool? CopyGroupsFromPreviousAssignment { get; set; }
+        public Guid? SourceAssignmentId { get; set; }
     }
 }

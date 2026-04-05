@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Domain.Models;
+using GoogleClass.Models;
 
 namespace GoogleClass.DTOs;
 
@@ -25,4 +26,9 @@ public class TeamMemberDto
     
     [Required]
     public TeamMemberRole Role { get; set; }
+}
+
+public class RenameTeamRequestDto
+{
+    public string NewName { get; set; } = string.Empty;
 }

@@ -3,12 +3,15 @@ using Application.DTOs.Post;
 using Application.Profiles;
 using Application.Services.Abstractions;
 using Application.Services.Implementations;
+using Application.Services.Implementations.CaptainVoting;
 using Application.Services.Interfaces;
 using Application.Validators;
 using Common.Middlewares;
 using Common.Options;
 using FluentValidation;
+using GoogleClass.DTOs;
 using GoogleClass.DTOs.Auth;
+using GoogleClass.DTOs.Comment;
 using GoogleClass.DTOs.User;
 using GoogleClass.Models;
 using Infrastructure.Services;
@@ -22,8 +25,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using GoogleClass.DTOs;
-using GoogleClass.DTOs.Comment;
 using Web.Options;
 
 namespace Web
@@ -116,6 +117,11 @@ namespace Web
 
 
             builder.Services
+                .AddScoped<ITeamManagerService, TeamManagerService>()
+                .AddScoped<ICaptainStrategyFactory, CaptainStrategyFactory>()
+                .AddScoped<FirstMemberStrategy>()
+                .AddScoped<TeacherFixedStrategy>()
+                .AddScoped<VotingAndLotteryStrategy>()
                 .AddScoped<IPostService, PostService>()
                 .AddScoped<IUserService, UserService>()
                 .AddScoped<IAuthService, AuthService>()
