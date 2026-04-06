@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -10,9 +11,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoogleClass.Migrations
 {
     [DbContext(typeof(GcDbContext))]
-    partial class GcDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260405183047_KakoyCreatorIdSanyaTbl4ego")]
+    partial class KakoyCreatorIdSanyaTbl4ego
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -84,99 +87,6 @@ namespace GoogleClass.Migrations
                     b.HasIndex("TeamSolutionId");
 
                     b.ToTable("FileTeamSolutions");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistribution", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AssignmentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsCustomized")
-                        .HasColumnType("boolean");
-
-                    b.Property<long>("RawScore")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("TeamId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssignmentId");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("GradeDistributions");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistributionEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DistributionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Points")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DistributionId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("GradeDistributionEntries");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistributionVote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DistributionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("UpdatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Vote")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DistributionId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("GradeDistributionVotes");
                 });
 
             modelBuilder.Entity("Domain.Models.RefreshToken", b =>
@@ -925,63 +835,6 @@ namespace GoogleClass.Migrations
                     b.Navigation("TeamSolution");
                 });
 
-            modelBuilder.Entity("Domain.Models.GradeDistribution", b =>
-                {
-                    b.HasOne("Domain.Models.TeamAssignment", "Assignment")
-                        .WithMany()
-                        .HasForeignKey("AssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.Team", "Team")
-                        .WithMany()
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Assignment");
-
-                    b.Navigation("Team");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistributionEntry", b =>
-                {
-                    b.HasOne("Domain.Models.GradeDistribution", "Distribution")
-                        .WithMany("Entries")
-                        .HasForeignKey("DistributionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Distribution");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistributionVote", b =>
-                {
-                    b.HasOne("Domain.Models.GradeDistribution", "Distribution")
-                        .WithMany("Votes")
-                        .HasForeignKey("DistributionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GoogleClass.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Distribution");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("GoogleClass.Models.Comment", b =>
                 {
                     b.HasOne("GoogleClass.Models.Commentable", "Commentable")
@@ -1236,13 +1089,6 @@ namespace GoogleClass.Migrations
                     b.Navigation("Task");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Domain.Models.GradeDistribution", b =>
-                {
-                    b.Navigation("Entries");
-
-                    b.Navigation("Votes");
                 });
 
             modelBuilder.Entity("GoogleClass.Models.Comment", b =>

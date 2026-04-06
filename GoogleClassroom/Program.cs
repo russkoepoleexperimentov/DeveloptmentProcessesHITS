@@ -141,6 +141,7 @@ namespace Web
                 .AddScoped<IValidator<UpdateSolutionRequestDto>, UpdateSolutionRequestDtoValidator>()
                 .AddScoped<IValidator<SubmitTeamSolutionRequestDto>, SubmitTeamSolutionValidator>()
                 .AddScoped<IValidator<UpdateTeamSolutionRequestDto>, UpdateTeamSolutionValidator>()
+                .AddScoped<IGradeDistributionService, GradeDistributionService>()
                 .AddAutoMapper(typeof(UserMapProfile))
                 .AddAutoMapper(typeof(PostMappingProfile));
 
