@@ -33,10 +33,11 @@ public class CommentService : ICommentService
     public async Task<IdRequestDto> CreatePostCommentAsync(Guid currentUserId, Guid postId, AddCommentRequestDto dto)
     {
         await _addCommentValidator.ValidateAndThrowAsync(dto);
-        
+
         var post = await _context.Posts.FindAsync(postId);
         var assignment = await _context.Assignments.FindAsync(postId);
-        if(post == null && assignment == null)
+        var teamAssignment = await _context.TeamAssignments.FindAsync(postId);
+        if (post == null && assignment == null && teamAssignment == null)
             throw new NotFoundException("Post not found");
 
         var comment = CreateBaseComment(currentUserId, dto);
@@ -131,7 +132,8 @@ public class CommentService : ICommentService
     {
         var post = await _context.Posts.FindAsync(postId);
         var assignment = await _context.Assignments.FindAsync(postId);
-        if (post == null && assignment == null)
+        var teamAssignment = await _context.TeamAssignments.FindAsync(postId);
+        if (post == null && assignment == null && teamAssignment == null)
             throw new NotFoundException("Post not found");
 
         var comments = await _context.Comments

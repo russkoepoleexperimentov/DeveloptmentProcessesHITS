@@ -214,11 +214,13 @@ namespace Application.Services.Implementations
 
         public async Task StartVotingAsync(Guid teamId, Guid initiatorId)
         {
-            if (!await IsMemberOfTeamAsync(teamId, initiatorId))
-                throw new ForbiddenException("You are not a member of this team");
-
             var team = await _context.Teams.FindAsync(teamId);
             if (team == null) throw new NotFoundException("Team not found");
+
+            var isTeacher = await IsTeacherOfCourseAsync(team.CourseId, initiatorId);
+            var isCaptain = await IsCaptainAsync(teamId, initiatorId);
+            if (!isTeacher && !isCaptain)
+                throw new ForbiddenException("Only the team captain or a course teacher can start voting");
 
             var assignment = await _context.TeamAssignments.FindAsync(team.AssignmentId);
             if (assignment?.CaptainMode != CaptainSelectionMode.VotingAndLottery)

@@ -74,6 +74,7 @@ public class SolutionService : ISolutionService
             solution.Status = SolutionStatus.Pending;
             solution.UpdatedDate = DateTime.UtcNow;
 
+            _context.FileSolutions.RemoveRange(solution.FileSolutions);
             solution.FileSolutions.Clear();
         }
 
