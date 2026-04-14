@@ -29,4 +29,7 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<TeamSolution> TeamSolutions { get; set; }
     public DbSet<FileTeamSolution> FileTeamSolutions { get; set; }
     public DbSet<Team> Teams { get; set; }
+    public DbSet<GradeDistribution> GradeDistributions { get; set; }
+    public DbSet<GradeDistributionEntry> GradeDistributionEntries { get; set; }
+    public DbSet<GradeDistributionVote> GradeDistributionVotes { get; set; }
 }

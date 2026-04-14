@@ -16,15 +16,18 @@ namespace Application.Services.Implementations
         private readonly GcDbContext _context;
         private readonly IValidator<SubmitTeamSolutionRequestDto> _submitValidator;
         private readonly IValidator<UpdateTeamSolutionRequestDto> _updateValidator;
+        private readonly IGradeDistributionService _gradeDistributionService;
 
         public TeamSolutionService(
             GcDbContext context,
             IValidator<SubmitTeamSolutionRequestDto> submitValidator,
-            IValidator<UpdateTeamSolutionRequestDto> updateValidator)
+            IValidator<UpdateTeamSolutionRequestDto> updateValidator,
+            IGradeDistributionService gradeDistributionService)
         {
             _context = context;
             _submitValidator = submitValidator;
             _updateValidator = updateValidator;
+            _gradeDistributionService = gradeDistributionService;
         }
 
         public async Task<IdRequestDto> SubmitSolutionAsync(
@@ -259,6 +262,11 @@ namespace Application.Services.Implementations
                 if (dto.Score > solution.Task.MaxScore)
                     throw new BadRequestException("Score exceeds max score");
                 solution.Score = (uint)dto.Score.Value;
+            }
+
+            if (dto.Score.HasValue && solution.Score != dto.Score.Value)
+            {
+                await _gradeDistributionService.ResetDistributionAsync(solution.TeamId, solution.TaskId);
             }
 
             solution.Status = dto.Status;
