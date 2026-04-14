@@ -444,6 +444,14 @@ namespace Application.Services.Implementations
                     response.SolvableAfterDeadline = teamAssignment.SolvableAfterDeadline;
                     response.MinTeamSize = teamAssignment.MinTeamSize;
                     response.MaxTeamSize = teamAssignment.MaxTeamSize;
+
+                    response.CaptainMode = teamAssignment.CaptainMode;
+                    response.VotingDurationHours = teamAssignment.VotingDurationHours;
+                    response.PredefinedTeamsCount = teamAssignment.PredefinedTeamsCount;
+                    response.AllowJoinTeam = teamAssignment.AllowJoinTeam;
+                    response.AllowLeaveTeam = teamAssignment.AllowLeaveTeam;
+                    response.AllowStudentTransferCaptain = teamAssignment.AllowStudentTransferCaptain;
+
                     break;
 
                 case Assignment assignment:

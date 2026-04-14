@@ -32,4 +32,12 @@ public class PostDetailsDto
     public int? MinTeamSize { get; set; } = null;
     public int? MaxTeamSize { get; set; } = null;
     public TeamSolutionDto? TeamSolution { get; set; } = null;
+
+    public CaptainSelectionMode? CaptainMode { get; set; }
+    public int? VotingDurationHours { get; set; }
+
+    public int? PredefinedTeamsCount { get; set; }
+    public bool? AllowJoinTeam { get; set; }
+    public bool? AllowLeaveTeam { get; set; }
+    public bool? AllowStudentTransferCaptain { get; set; }
 }
