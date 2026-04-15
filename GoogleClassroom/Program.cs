@@ -197,9 +197,10 @@ namespace Web
             app.UseMiddleware<ExceptionCatchMiddleware>();
             app.UseSwaggerUI();
 
+            app.UseCors("AllowFrontend");
+
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseCors("AllowFrontend");
 
             app.MapControllers();
 

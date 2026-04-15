@@ -24,8 +24,7 @@ namespace Application.DTOs.Post
 
         public CaptainSelectionMode? CaptainMode { get; set; }
         public int? VotingDurationHours { get; set; }
-
-        public bool? TeacherCreatesTeams { get; set; }       
+     
         public int? PredefinedTeamsCount { get; set; }
         public bool? AllowJoinTeam { get; set; } 
         public bool? AllowLeaveTeam { get; set; } 
