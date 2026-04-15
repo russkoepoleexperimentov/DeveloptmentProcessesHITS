@@ -118,7 +118,7 @@ public class GradeDistributionService : IGradeDistributionService
         await _context.SaveChangesAsync();
     }
 
-    public async Task ResetDistributionAsync(Guid teamId, Guid assignmentId)
+    public async Task ResetDistributionAsync(Guid teamId, Guid assignmentId, uint newRawScore)
     {
         var distribution = await LoadDistributionAsync(teamId, assignmentId);
         if (distribution == null) return;
@@ -135,7 +135,8 @@ public class GradeDistributionService : IGradeDistributionService
             .Select(m => m.UserId)
             .ToListAsync();
 
-        var rawScore = distribution.RawScore;
+        distribution.RawScore = newRawScore;
+        var rawScore = newRawScore;
         var memberCount = members.Count;
         var defaultPoints = memberCount > 0 ? (decimal)rawScore / memberCount : 0;
 

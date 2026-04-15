@@ -263,12 +263,14 @@ namespace Application.Services.Implementations
             {
                 if (dto.Score > solution.Task.MaxScore)
                     throw new BadRequestException("Score exceeds max score");
-                solution.Score = (uint)dto.Score.Value;
-            }
 
-            if (dto.Score.HasValue && solution.Score != dto.Score.Value)
-            {
-                await _gradeDistributionService.ResetDistributionAsync(solution.TeamId, solution.TaskId);
+                var oldScore = solution.Score;
+                solution.Score = (uint)dto.Score.Value;
+
+                if (solution.Score != oldScore)
+                {
+                    await _gradeDistributionService.ResetDistributionAsync(solution.TeamId, solution.TaskId, solution.Score);
+                }
             }
 
             solution.Status = dto.Status;
