@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la *.sln)",
+      "Read(//d/c/#proj/**)",
+      "Bash(wc -l Domain/Models/*.cs)",
+      "Bash(find . -name \".github\" -type d -exec find {} -type f \\\\;)"
+    ]
+  }
+}

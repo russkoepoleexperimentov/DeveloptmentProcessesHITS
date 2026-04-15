@@ -1,5 +1,4 @@
-﻿// Application/Services/Implementations/GradeDistributionService.cs
-using Application.Services.Interfaces;
+﻿using Application.Services.Interfaces;
 using Common.Exceptions;
 using Domain.Models;
 using GoogleClass.DTOs.GradeDistribution;
@@ -237,7 +236,8 @@ public class GradeDistributionService : IGradeDistributionService
             .FirstOrDefaultAsync(t => t.Id == teamId);
         if (team == null) throw new NotFoundException("Team not found");
 
-        var isCaptain = team.Members.Any(m => m.UserId == userId && m.Role == TeamMemberRole.Leader);
+        var isCaptain = team.FixedCaptainId == userId
+            || team.Members.Any(m => m.UserId == userId && m.Role == TeamMemberRole.Leader);
         if (!isCaptain)
             throw new ForbiddenException("Only the team captain can modify grade distribution");
     }
