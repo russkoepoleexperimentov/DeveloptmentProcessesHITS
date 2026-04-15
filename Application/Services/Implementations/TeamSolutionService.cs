@@ -46,7 +46,7 @@ namespace Application.Services.Implementations
             if (role == null || role.RoleType != UserRoleType.Student)
                 throw new ForbiddenException("Only students can submit solutions");
 
-            var (team, isCaptain) = await GetTeamAndCaptainStatusAsync(currentUserId, task.CourseId);
+            var (team, isCaptain) = await GetTeamAndCaptainStatusAsync(currentUserId, taskId);
             if (team == null)
                 throw new BadRequestException("You must be in a team to submit solution");
             if (!isCaptain)
@@ -115,7 +115,7 @@ namespace Application.Services.Implementations
             if (task == null)
                 throw new NotFoundException("Team assignment not found");
 
-            var (team, isCaptain) = await GetTeamAndCaptainStatusAsync(currentUserId, task.CourseId);
+            var (team, isCaptain) = await GetTeamAndCaptainStatusAsync(currentUserId, taskId);
             if (team == null)
                 throw new BadRequestException("You are not in a team");
             if (!isCaptain)
@@ -277,13 +277,14 @@ namespace Application.Services.Implementations
 
         #region Private Helpers
 
-        private async Task<(Team? team, bool isCaptain)> GetTeamAndCaptainStatusAsync(Guid userId, Guid courseId)
+        private async Task<(Team? team, bool isCaptain)> GetTeamAndCaptainStatusAsync(Guid userId, Guid taskId)
         {
             var team = await _context.Teams
                 .Include(t => t.Members)
-                .FirstOrDefaultAsync(t => t.CourseId == courseId && t.Members.Any(m => m.UserId == userId));
+                .FirstOrDefaultAsync(t => t.AssignmentId == taskId && t.Members.Any(m => m.UserId == userId));
             if (team == null) return (null, false);
-            var isCaptain = team.Members.Any(m => m.UserId == userId && m.Role == TeamMemberRole.Leader);
+            var isCaptain = team.Members.Any(m => m.UserId == userId && m.Role == TeamMemberRole.Leader)
+                            || team.FixedCaptainId == userId;
             return (team, isCaptain);
         }
 

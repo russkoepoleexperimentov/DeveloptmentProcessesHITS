@@ -49,6 +49,9 @@ public class SolutionService : ISolutionService
         if (role == null || role.RoleType != UserRoleType.Student)
             throw new ForbiddenException("Only students can submit solutions");
 
+        if (dto.Files != null && dto.Files.Any())
+            await ValidateFilesExistAsync(dto.Files);
+
         var solution = await _context.Solutions
             .Include(s => s.FileSolutions)
             .FirstOrDefaultAsync(s => s.TaskId == taskId && s.UserId == currentUserId);
@@ -120,7 +123,7 @@ public class SolutionService : ISolutionService
     public async Task<StudentSolutionDetailsDto> GetSolutionByIdAsync(Guid currentUserId, Guid taskId)
     {
         var solution = await _context.Solutions
-            .Include(s => s.FileSolutions)
+            .Include(s => s.FileSolutions).ThenInclude(fp => fp.File)
             .FirstOrDefaultAsync(s => s.TaskId == taskId && s.UserId == currentUserId);
 
         if (solution == null)
@@ -241,5 +244,13 @@ public class SolutionService : ISolutionService
         {
             Id = solution.Id
         };
+    }
+
+    private async Task ValidateFilesExistAsync(IEnumerable<Guid> fileIds)
+    {
+        var fileIdsList = fileIds.ToList();
+        var existing = await _context.UserFiles.CountAsync(f => fileIdsList.Contains(f.Id));
+        if (existing != fileIdsList.Count)
+            throw new NotFoundException("One or more files not found");
     }
 }

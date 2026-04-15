@@ -208,6 +208,9 @@ namespace Application.Services.Implementations
 
         public async Task<bool> IsCaptainAsync(Guid teamId, Guid userId)
         {
+            var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId);
+            if (team == null) return false;
+            if (team.FixedCaptainId == userId) return true;
             return await _context.TeamMembers
                 .AnyAsync(m => m.TeamId == teamId && m.UserId == userId && m.Role == TeamMemberRole.Leader);
         }

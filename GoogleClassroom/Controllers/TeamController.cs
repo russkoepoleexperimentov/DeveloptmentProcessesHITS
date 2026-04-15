@@ -74,11 +74,25 @@ namespace GoogleClassroom.Controllers
         }
 
         [HttpPost("teacher/teams/{teamId}/fixed-captain")]
+        [Authorize(AuthenticationSchemes = "Bearer")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> SetFixedCaptain(Guid teamId, [FromBody] Guid studentId)
         {
-            var teacherId = HttpContext.GetUserId()!.Value;
-            await _teamManager.SetFixedCaptainAsync(teamId, studentId, teacherId);
-            return Ok(new ApiResponse<object> { Type = ApiResponseType.Success, Message = "Fixed captain set" });
+            var teacherId = HttpContext.GetUserId();
+            if (teacherId is null)
+                return Unauthorized(new ApiResponse<object>
+                {
+                    Type = ApiResponseType.Error,
+                    Message = "Unauthorized",
+                    Data = null
+                });
+            await _teamManager.SetFixedCaptainAsync(teamId, studentId, teacherId.Value);
+            return Ok(new ApiResponse<object>
+            {
+                Type = ApiResponseType.Success,
+                Message = "Fixed captain set",
+                Data = null
+            });
         }
 
         /// <summary>
