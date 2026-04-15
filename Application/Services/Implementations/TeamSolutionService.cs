@@ -143,7 +143,9 @@ namespace Application.Services.Implementations
             if (task == null)
                 throw new NotFoundException("Team assignment not found");
 
-            var team = await GetTeamForStudent(currentUserId, task.CourseId);
+            var team = await _context.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.AssignmentId == taskId && t.Members.Any(m => m.UserId == currentUserId));
             if (team == null)
                 throw new NotFoundException("You are not in a team");
 
