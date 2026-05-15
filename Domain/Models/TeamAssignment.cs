@@ -1,4 +1,5 @@
-﻿using GoogleClass.DTOs.Common;
+using Domain.Models.Criteria;
+using GoogleClass.DTOs.Common;
 using GoogleClass.Models;
 
 namespace Domain.Models;
@@ -15,13 +16,19 @@ public class TeamAssignment : GenericPost
     public Guid? FixedCaptainId { get; set; }
     public int? VotingDurationHours { get; set; }
 
-    public int PredefinedTeamsCount { get; set; } = 0; 
+    public int PredefinedTeamsCount { get; set; } = 0;
 
     public bool AllowJoinTeam { get; set; } = true;
     public bool AllowLeaveTeam { get; set; } = true;
     public bool AllowStudentTransferCaptain { get; set; } = true;
     public bool CopyGroupsFromPreviousAssignment { get; set; }
     public Guid? SourceAssignmentId { get; set; }
+
+    public float? FailThreshold { get; set; }
+    public float? SuccessThreshold { get; set; }
+    public float StudentScoreWeight { get; set; }
+    public float? PenaltyPerDay { get; set; }
+    public int MaxDays { get; set; }
 
     public virtual ICollection<Team> Teams { get; set; } = new List<Team>();
     public virtual ICollection<TeamSolution> TeamSolutions { get; set; } = new List<TeamSolution>();

@@ -1,4 +1,5 @@
-﻿using GoogleClass.DTOs;
+using Application.DTOs.Grading;
+using GoogleClass.DTOs;
 using GoogleClass.DTOs.Comment;
 using GoogleClass.DTOs.Common;
 using GoogleClass.Models;
@@ -18,4 +19,5 @@ public interface ISolutionService
         SolutionStatus? status,
         Guid? studentId);
     Task<IdRequestDto> MarkSolutionAsync(Guid currentUserId, Guid solutionId, UpdateSolutionRequestDto dto);
+    Task<GradeBreakdownDto> PreviewScoreAsync(Guid currentUserId, Guid solutionId, GradePreviewRequestDto dto);
 }

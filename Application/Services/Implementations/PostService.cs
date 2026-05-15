@@ -1,8 +1,10 @@
-﻿using Application.DTOs.Post;
+﻿using Application.DTOs.Criterion;
+using Application.DTOs.Post;
 using Application.Services.Interfaces;
 using AutoMapper;
 using Common.Exceptions;
 using Domain.Models;
+using Domain.Models.Criteria;
 using FluentValidation;
 using GoogleClass.DTOs;
 using GoogleClass.DTOs.Common;
@@ -59,12 +61,15 @@ namespace Application.Services.Implementations
             if (dto.Files != null && dto.Files.Any())
                 await AddFilesToPost(post.Id, dto.Files);
 
+            if (dto.Type == PostType.TASK || dto.Type == PostType.TEAM_TASK)
+                await ReplaceCriteriaAsync(post.Id, dto.Criteria);
+
             return new IdRequestDto { Id = post.Id };
         }
 
         public async Task<PostDetailsDto> GetPostAsync(Guid currentUserId, Guid postId)
         {
-            var post = await FindPostById(postId, includeFiles: true);
+            var post = await FindPostById(postId, includeFiles: true, includeCriteria: true);
             if (post == null) throw new NotFoundException("Post not found");
 
             var isMember = await _context.CourseRoles
@@ -132,7 +137,7 @@ namespace Application.Services.Implementations
         public async Task<IdRequestDto> UpdatePostAsync(Guid currentUserId, Guid postId, CreateUpdatePostDto dto)
         {
             await _validator.ValidateAndThrowAsync(dto);
-            var post = await FindPostById(postId, includeFiles: true);
+            var post = await FindPostById(postId, includeFiles: true, includeCriteria: false);
             if (post == null) throw new NotFoundException("Post not found");
 
             var userRole = await _context.CourseRoles.FirstOrDefaultAsync(cr => cr.CourseId == post.CourseId && cr.UserId == currentUserId);
@@ -161,6 +166,10 @@ namespace Application.Services.Implementations
 
             await UpdatePostFiles(post, dto.Files);
             await _context.SaveChangesAsync();
+
+            if (post is Assignment or TeamAssignment)
+                await ReplaceCriteriaAsync(post.Id, dto.Criteria);
+
             return new IdRequestDto { Id = post.Id };
         }
 
@@ -243,6 +252,7 @@ namespace Application.Services.Implementations
             assignment.TaskType = dto.TaskType!.Value;
             assignment.MaxScore = (uint)(dto.MaxScore ?? 5);
             assignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
+            ApplyGradingSettings(assignment, dto);
 
             _context.Assignments.Add(assignment);
             return assignment;
@@ -254,6 +264,25 @@ namespace Application.Services.Implementations
             assignment.MaxScore = (uint)(dto.MaxScore ?? 5);
             assignment.SolvableAfterDeadline = dto.SolvableAfterDeadline ?? false;
             assignment.TaskType = dto.TaskType!.Value;
+            ApplyGradingSettings(assignment, dto);
+        }
+
+        private static void ApplyGradingSettings(Assignment assignment, CreateUpdatePostDto dto)
+        {
+            assignment.FailThreshold = dto.FailThreshold;
+            assignment.SuccessThreshold = dto.SuccessThreshold;
+            assignment.StudentScoreWeight = Math.Clamp(dto.StudentScoreWeight ?? 0f, 0f, 1f);
+            assignment.PenaltyPerDay = dto.PenaltyPerDay;
+            assignment.MaxDays = dto.MaxDays ?? 0;
+        }
+
+        private static void ApplyGradingSettings(TeamAssignment assignment, CreateUpdatePostDto dto)
+        {
+            assignment.FailThreshold = dto.FailThreshold;
+            assignment.SuccessThreshold = dto.SuccessThreshold;
+            assignment.StudentScoreWeight = Math.Clamp(dto.StudentScoreWeight ?? 0f, 0f, 1f);
+            assignment.PenaltyPerDay = dto.PenaltyPerDay;
+            assignment.MaxDays = dto.MaxDays ?? 0;
         }
 
         private async Task<TeamAssignment> CreateTeamAssignmentAsync(CreateUpdatePostDto dto, Guid courseId, Guid authorId)
@@ -281,6 +310,7 @@ namespace Application.Services.Implementations
                 CopyGroupsFromPreviousAssignment = dto.CopyGroupsFromPreviousAssignment ?? false,
                 SourceAssignmentId = dto.SourceAssignmentId
             };
+            ApplyGradingSettings(teamAssignment, dto);
             _context.TeamAssignments.Add(teamAssignment);
             await _context.SaveChangesAsync();
             await SyncTeamsForAssignmentAsync(teamAssignment, dto);
@@ -302,6 +332,7 @@ namespace Application.Services.Implementations
             if (dto.AllowStudentTransferCaptain.HasValue) teamAssignment.AllowStudentTransferCaptain = dto.AllowStudentTransferCaptain.Value;
             if (dto.CopyGroupsFromPreviousAssignment.HasValue) teamAssignment.CopyGroupsFromPreviousAssignment = dto.CopyGroupsFromPreviousAssignment.Value;
             if (dto.SourceAssignmentId.HasValue) teamAssignment.SourceAssignmentId = dto.SourceAssignmentId;
+            ApplyGradingSettings(teamAssignment, dto);
         }
 
         private async Task SyncTeamsForAssignmentAsync(TeamAssignment assignment, CreateUpdatePostDto dto)
@@ -384,29 +415,65 @@ namespace Application.Services.Implementations
             await _context.SaveChangesAsync();
         }
 
-        private async Task<GenericPost?> FindPostById(Guid postId, bool includeFiles = false)
+        private async Task<GenericPost?> FindPostById(Guid postId, bool includeFiles = false, bool includeCriteria = false)
         {
             GenericPost? post = null;
-            if (includeFiles)
-                post = await _context.Posts.Include(p => p.FilePosts).ThenInclude(fp => fp.File)
-                    .FirstOrDefaultAsync(p => p.Id == postId);
-            else
-                post = await _context.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+            IQueryable<RegularPost> postsQ = _context.Posts;
+            if (includeFiles) postsQ = postsQ.Include(p => p.FilePosts).ThenInclude(fp => fp.File);
+            post = await postsQ.FirstOrDefaultAsync(p => p.Id == postId);
             if (post != null) return post;
 
-            if (includeFiles)
-                post = await _context.Assignments.Include(a => a.FilePosts).ThenInclude(fp => fp.File)
-                    .FirstOrDefaultAsync(a => a.Id == postId);
-            else
-                post = await _context.Assignments.FirstOrDefaultAsync(a => a.Id == postId);
+            IQueryable<Assignment> assignQ = _context.Assignments;
+            if (includeFiles) assignQ = assignQ.Include(a => a.FilePosts).ThenInclude(fp => fp.File);
+            if (includeCriteria) assignQ = assignQ.Include(a => a.Criteria);
+            post = await assignQ.FirstOrDefaultAsync(a => a.Id == postId);
             if (post != null) return post;
 
-            if (includeFiles)
-                post = await _context.TeamAssignments.Include(ta => ta.FilePosts).ThenInclude(fp => fp.File)
-                    .FirstOrDefaultAsync(ta => ta.Id == postId);
-            else
-                post = await _context.TeamAssignments.FirstOrDefaultAsync(ta => ta.Id == postId);
+            IQueryable<TeamAssignment> teamQ = _context.TeamAssignments;
+            if (includeFiles) teamQ = teamQ.Include(ta => ta.FilePosts).ThenInclude(fp => fp.File);
+            if (includeCriteria) teamQ = teamQ.Include(ta => ta.Criteria);
+            post = await teamQ.FirstOrDefaultAsync(ta => ta.Id == postId);
             return post;
+        }
+
+        private async Task ReplaceCriteriaAsync(Guid postId, List<CriterionDefinitionDto>? criteria)
+        {
+            if (criteria == null) return;
+
+            ValidateCriteria(criteria);
+
+            var existing = await _context.Criteria.Where(c => c.PostId == postId).ToListAsync();
+            if (existing.Any())
+                _context.Criteria.RemoveRange(existing);
+
+            foreach (var def in criteria)
+            {
+                var entity = CriterionMapper.ToEntity(def, postId);
+                entity.Id = Guid.NewGuid();
+                _context.Criteria.Add(entity);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private static void ValidateCriteria(List<CriterionDefinitionDto> criteria)
+        {
+            var weighted = criteria.Where(c => c.Type == CriterionTypeDto.Weighted).ToList();
+            if (weighted.Any())
+            {
+                if (weighted.Any(w => w.Weight is null or < 0 or > 1))
+                    throw new BadRequestException("Weighted criterion weight must be in [0; 1]");
+
+                var sum = weighted.Sum(w => w.Weight ?? 0f);
+                if (Math.Abs(sum - 1f) > 0.001f)
+                    throw new BadRequestException($"Weighted criteria weights must sum to 1 (got {sum:F3})");
+            }
+
+            foreach (var qc in criteria.Where(c => c.Type == CriterionTypeDto.Quality))
+            {
+                if (qc.Threshold is null or < 0 or > 1)
+                    throw new BadRequestException("Quality coefficient threshold must be in [0; 1]");
+            }
         }
 
         private void ValidateTypeMatch(GenericPost post, PostType requestedType)
@@ -452,6 +519,15 @@ namespace Application.Services.Implementations
                     response.AllowLeaveTeam = teamAssignment.AllowLeaveTeam;
                     response.AllowStudentTransferCaptain = teamAssignment.AllowStudentTransferCaptain;
 
+                    response.FailThreshold = teamAssignment.FailThreshold;
+                    response.SuccessThreshold = teamAssignment.SuccessThreshold;
+                    response.StudentScoreWeight = teamAssignment.StudentScoreWeight;
+                    response.PenaltyPerDay = teamAssignment.PenaltyPerDay;
+                    response.MaxDays = teamAssignment.MaxDays;
+
+                    response.Criteria = teamAssignment.Criteria
+                        .OrderBy(c => c.OrderIndex)
+                        .Select(CriterionMapper.ToDto).ToList();
                     break;
 
                 case Assignment assignment:
@@ -460,6 +536,16 @@ namespace Application.Services.Implementations
                     response.MaxScore = (int?)assignment.MaxScore;
                     response.SolvableAfterDeadline = assignment.SolvableAfterDeadline;
                     response.TaskType = assignment.TaskType;
+
+                    response.FailThreshold = assignment.FailThreshold;
+                    response.SuccessThreshold = assignment.SuccessThreshold;
+                    response.StudentScoreWeight = assignment.StudentScoreWeight;
+                    response.PenaltyPerDay = assignment.PenaltyPerDay;
+                    response.MaxDays = assignment.MaxDays;
+
+                    response.Criteria = assignment.Criteria
+                        .OrderBy(c => c.OrderIndex)
+                        .Select(CriterionMapper.ToDto).ToList();
                     break;
 
                 default:

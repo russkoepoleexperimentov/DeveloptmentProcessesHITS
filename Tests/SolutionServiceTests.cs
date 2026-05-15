@@ -1,4 +1,5 @@
 ﻿using Application.Services.Implementations;
+using Application.Services.Interfaces;
 using GoogleClass.DTOs;
 using GoogleClass.Models;
 
@@ -52,7 +53,7 @@ public class SolutionServiceTests
             .Setup(v => v.ValidateAsync(It.IsAny<UpdateSolutionRequestDto>(), default))
             .ReturnsAsync(new FluentValidation.Results.ValidationResult());
 
-        _service = new(_context, _userManagerMock.Object, _mapperMock.Object, _submitValidator.Object, _updateValidator.Object);
+        _service = new(_context, _userManagerMock.Object, _mapperMock.Object, _submitValidator.Object, _updateValidator.Object, new GradeCalculator());
     }
 
     [Fact]

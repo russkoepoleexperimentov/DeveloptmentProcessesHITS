@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using Application.DTOs.Grading;
 using Application.DTOs.Post;
 using GoogleClass.DTOs.Post;
 using GoogleClass.Models;
@@ -19,4 +20,8 @@ public class StudentSolutionDetailsDto
 
     [Required]
     public DateTime UpdatedDate { get; set; }
+
+    public EvaluationDto? SelfAssessment { get; set; }
+    public EvaluationDto? TeacherEvaluation { get; set; }
+    public GradeBreakdownDto? Breakdown { get; set; }
 }

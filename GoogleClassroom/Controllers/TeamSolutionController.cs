@@ -1,4 +1,5 @@
-﻿using Application.Services.Interfaces;
+﻿using Application.DTOs.Grading;
+using Application.Services.Interfaces;
 using Common;
 using GoogleClass.DTOs;
 using GoogleClass.DTOs.Common;
@@ -113,6 +114,60 @@ public class TeamSolutionController : ControllerBase
         var userId = HttpContext.GetUserId()!.Value;
         var result = await _teamSolutionService.MarkSolutionAsync(userId, solutionId, dto);
         return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
+
+    /// <summary>
+    /// Подать или обновить свою самооценку для командного решения (любой участник команды)
+    /// </summary>
+    [HttpPut("team-task/{taskId}/self-assessment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SubmitSelfAssessment(Guid taskId, SubmitSelfAssessmentDto dto)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+        var result = await _teamSolutionService.SubmitSelfAssessmentAsync(userId, taskId, dto);
+        return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
+
+    /// <summary>
+    /// Удалить свою самооценку для командного решения
+    /// </summary>
+    [HttpDelete("team-task/{taskId}/self-assessment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DeleteSelfAssessment(Guid taskId)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+        var result = await _teamSolutionService.DeleteSelfAssessmentAsync(userId, taskId);
+        return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
+
+    /// <summary>
+    /// Превью итоговой оценки командного решения (для преподавателя)
+    /// </summary>
+    [HttpPost("team-solution/{solutionId}/preview")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<GradeBreakdownDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> PreviewScore(Guid solutionId, GradePreviewRequestDto dto)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+        var result = await _teamSolutionService.PreviewScoreAsync(userId, solutionId, dto);
+        return Ok(new ApiResponse<GradeBreakdownDto>
         {
             Type = ApiResponseType.Success,
             Message = null,

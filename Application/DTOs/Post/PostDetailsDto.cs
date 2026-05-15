@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using Application.DTOs.Criterion;
 using Application.DTOs.Post;
 using GoogleClass.DTOs.Common;
 
@@ -13,10 +14,10 @@ public class PostDetailsDto
 
     [Required]
     public string Title { get; set; } = null!;
-    
+
     [Required]
     public string Text { get; set; } = null!;
-    
+
     public DateTime? Deadline { get; set; } = null;
 
     public int? MaxScore { get; set; } = null;
@@ -26,9 +27,9 @@ public class PostDetailsDto
     public bool? SolvableAfterDeadline { get; set; } = null;
 
     public List<FileDto>? Files { get; set; }
-    
+
     public UserSolutionDto? UserSolution { get; set; } = null;
-    
+
     public int? MinTeamSize { get; set; } = null;
     public int? MaxTeamSize { get; set; } = null;
     public TeamSolutionDto? TeamSolution { get; set; } = null;
@@ -40,4 +41,12 @@ public class PostDetailsDto
     public bool? AllowJoinTeam { get; set; }
     public bool? AllowLeaveTeam { get; set; }
     public bool? AllowStudentTransferCaptain { get; set; }
+
+    public float? FailThreshold { get; set; }
+    public float? SuccessThreshold { get; set; }
+    public float? StudentScoreWeight { get; set; }
+    public float? PenaltyPerDay { get; set; }
+    public int? MaxDays { get; set; }
+
+    public List<CriterionDto>? Criteria { get; set; }
 }

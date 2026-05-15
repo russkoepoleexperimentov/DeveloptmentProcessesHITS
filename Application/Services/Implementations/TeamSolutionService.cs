@@ -1,7 +1,9 @@
-﻿using Application.DTOs.Post;
+using Application.DTOs.Grading;
+using Application.DTOs.Post;
 using Application.Services.Interfaces;
 using Common.Exceptions;
 using Domain.Models;
+using Domain.Models.Criteria;
 using FluentValidation;
 using GoogleClass.DTOs;
 using GoogleClass.DTOs.Common;
@@ -17,17 +19,20 @@ namespace Application.Services.Implementations
         private readonly IValidator<SubmitTeamSolutionRequestDto> _submitValidator;
         private readonly IValidator<UpdateTeamSolutionRequestDto> _updateValidator;
         private readonly IGradeDistributionService _gradeDistributionService;
+        private readonly IGradeCalculator _gradeCalculator;
 
         public TeamSolutionService(
             GcDbContext context,
             IValidator<SubmitTeamSolutionRequestDto> submitValidator,
             IValidator<UpdateTeamSolutionRequestDto> updateValidator,
-            IGradeDistributionService gradeDistributionService)
+            IGradeDistributionService gradeDistributionService,
+            IGradeCalculator gradeCalculator)
         {
             _context = context;
             _submitValidator = submitValidator;
             _updateValidator = updateValidator;
             _gradeDistributionService = gradeDistributionService;
+            _gradeCalculator = gradeCalculator;
         }
 
         public async Task<IdRequestDto> SubmitSolutionAsync(
@@ -37,7 +42,9 @@ namespace Application.Services.Implementations
         {
             await _submitValidator.ValidateAndThrowAsync(dto);
 
-            var task = await _context.TeamAssignments.FindAsync(taskId);
+            var task = await _context.TeamAssignments
+                .Include(t => t.Criteria)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
             if (task == null)
                 throw new NotFoundException("Team assignment not found");
 
@@ -58,10 +65,19 @@ namespace Application.Services.Implementations
             if (dto.Files != null && dto.Files.Any())
                 await ValidateFilesExist(dto.Files);
 
+            if (task.StudentScoreWeight == 0f && dto.SelfAssessment != null)
+                dto.SelfAssessment = null;
+
+            if (dto.SelfAssessment != null)
+                ValidateEvaluationAgainstCriteria(task.Criteria, dto.SelfAssessment, isStudent: true);
+
             var solution = await _context.TeamSolutions
                 .Include(s => s.FileTeamSolutions)
+                .Include(s => s.WeightedValues)
+                .Include(s => s.ToggledValues)
                 .FirstOrDefaultAsync(s => s.TaskId == taskId && s.TeamId == team.Id);
 
+            var nowUtc = DateTime.UtcNow;
             if (solution == null)
             {
                 solution = new TeamSolution
@@ -72,8 +88,9 @@ namespace Application.Services.Implementations
                     SubmittedByUserId = currentUserId,
                     Text = dto.Text ?? string.Empty,
                     Status = SolutionStatus.Pending,
-                    CreatedDate = DateTime.UtcNow,
-                    UpdatedDate = DateTime.UtcNow
+                    CreatedDate = nowUtc,
+                    UpdatedDate = nowUtc,
+                    SubmittedAt = nowUtc
                 };
                 _context.TeamSolutions.Add(solution);
             }
@@ -85,10 +102,24 @@ namespace Application.Services.Implementations
                 solution.Text = dto.Text ?? string.Empty;
                 solution.Status = SolutionStatus.Pending;
                 solution.SubmittedByUserId = currentUserId;
-                solution.UpdatedDate = DateTime.UtcNow;
+                solution.UpdatedDate = nowUtc;
+                solution.SubmittedAt = nowUtc;
 
                 _context.FileTeamSolutions.RemoveRange(solution.FileTeamSolutions);
                 solution.FileTeamSolutions.Clear();
+            }
+
+            if (dto.SelfAssessment != null)
+            {
+                var staleSelfWeighted = solution.WeightedValues
+                    .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+                _context.WeightedCriterionValues.RemoveRange(staleSelfWeighted);
+                foreach (var v in staleSelfWeighted) solution.WeightedValues.Remove(v);
+
+                var staleSelfToggled = solution.ToggledValues
+                    .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+                _context.ToggledCriterionValues.RemoveRange(staleSelfToggled);
+                foreach (var v in staleSelfToggled) solution.ToggledValues.Remove(v);
             }
 
             if (dto.Files != null)
@@ -103,6 +134,9 @@ namespace Application.Services.Implementations
                     });
                 }
             }
+
+            if (dto.SelfAssessment != null)
+                PersistEvaluationValues(solution, dto.SelfAssessment, currentUserId, isSelfAssessment: true);
 
             await _context.SaveChangesAsync();
 
@@ -153,10 +187,16 @@ namespace Application.Services.Implementations
                 .Include(s => s.FileTeamSolutions).ThenInclude(f => f.File)
                 .Include(s => s.Team).ThenInclude(t => t.Members).ThenInclude(m => m.User)
                 .Include(s => s.SubmittedByUser)
+                .Include(s => s.WeightedValues).ThenInclude(v => v.Evaluator)
+                .Include(s => s.ToggledValues).ThenInclude(v => v.Evaluator)
                 .FirstOrDefaultAsync(s => s.TaskId == taskId && s.TeamId == team.Id);
 
             if (solution == null)
                 throw new NotFoundException("Solution not found");
+
+            var selfAssessments = BuildSelfAssessmentList(solution);
+            var teacherWeighted = solution.WeightedValues.Where(v => !v.IsSelfAssessment).ToList();
+            var teacherToggled = solution.ToggledValues.Where(v => !v.IsSelfAssessment).ToList();
 
             return new StudentTeamSolutionDetailsDto
             {
@@ -175,7 +215,10 @@ namespace Application.Services.Implementations
                 {
                     Id = f.FileId.ToString(),
                     Name = f.File.OriginalName
-                }).ToList()
+                }).ToList(),
+                SelfAssessments = selfAssessments,
+                TeacherEvaluation = teacherWeighted.Any() || teacherToggled.Any()
+                    ? CriterionMapper.ToEvaluationDto(teacherWeighted, teacherToggled) : null
             };
         }
 
@@ -249,7 +292,9 @@ namespace Application.Services.Implementations
             await _updateValidator.ValidateAndThrowAsync(dto);
 
             var solution = await _context.TeamSolutions
-                .Include(s => s.Task)
+                .Include(s => s.Task).ThenInclude(t => t.Criteria)
+                .Include(s => s.WeightedValues)
+                .Include(s => s.ToggledValues)
                 .FirstOrDefaultAsync(s => s.Id == solutionId);
             if (solution == null)
                 throw new NotFoundException("Solution not found");
@@ -259,18 +304,40 @@ namespace Application.Services.Implementations
             if (role == null || role.RoleType != UserRoleType.Teacher)
                 throw new ForbiddenException("Only teachers can review solutions");
 
-            if (dto.Score.HasValue)
+            uint oldScore = solution.Score;
+
+            if (dto.Evaluation != null)
+            {
+                ValidateEvaluationAgainstCriteria(solution.Task.Criteria, dto.Evaluation, isStudent: false);
+
+                var staleWeighted = solution.WeightedValues.Where(v => !v.IsSelfAssessment).ToList();
+                _context.WeightedCriterionValues.RemoveRange(staleWeighted);
+                foreach (var v in staleWeighted) solution.WeightedValues.Remove(v);
+
+                var staleToggled = solution.ToggledValues.Where(v => !v.IsSelfAssessment).ToList();
+                _context.ToggledCriterionValues.RemoveRange(staleToggled);
+                foreach (var v in staleToggled) solution.ToggledValues.Remove(v);
+
+                PersistEvaluationValues(solution, dto.Evaluation, currentUserId, isSelfAssessment: false);
+
+                var selfEvals = BuildSelfEvaluationDtos(solution);
+
+                var breakdown = _gradeCalculator.Calculate(BuildCalculatorInput(
+                    solution.Task, solution.SubmittedAt, dto.Evaluation, selfEvals));
+
+                solution.Score = (uint)Math.Round(Math.Max(0f, breakdown.FinalScore));
+            }
+            else if (dto.Score.HasValue)
             {
                 if (dto.Score > solution.Task.MaxScore)
                     throw new BadRequestException("Score exceeds max score");
 
-                var oldScore = solution.Score;
                 solution.Score = (uint)dto.Score.Value;
+            }
 
-                if (solution.Score != oldScore)
-                {
-                    await _gradeDistributionService.ResetDistributionAsync(solution.TeamId, solution.TaskId, solution.Score);
-                }
+            if (solution.Score != oldScore)
+            {
+                await _gradeDistributionService.ResetDistributionAsync(solution.TeamId, solution.TaskId, solution.Score);
             }
 
             solution.Status = dto.Status;
@@ -279,7 +346,233 @@ namespace Application.Services.Implementations
             return new IdRequestDto { Id = solution.Id };
         }
 
+        public async Task<IdRequestDto> SubmitSelfAssessmentAsync(Guid currentUserId, Guid taskId, SubmitSelfAssessmentDto dto)
+        {
+            var task = await _context.TeamAssignments
+                .Include(t => t.Criteria)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+            if (task == null)
+                throw new NotFoundException("Team assignment not found");
+
+            if (task.StudentScoreWeight == 0f)
+                throw new BadRequestException("Self-assessment is disabled for this task");
+
+            var team = await _context.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.AssignmentId == taskId && t.Members.Any(m => m.UserId == currentUserId));
+            if (team == null)
+                throw new ForbiddenException("You are not a member of any team for this assignment");
+
+            var solution = await _context.TeamSolutions
+                .Include(s => s.WeightedValues)
+                .Include(s => s.ToggledValues)
+                .FirstOrDefaultAsync(s => s.TaskId == taskId && s.TeamId == team.Id);
+            if (solution == null)
+                throw new BadRequestException("Captain must submit the solution before members can self-assess");
+
+            if (solution.Status == SolutionStatus.Checked)
+                throw new BadRequestException("Cannot modify self-assessment for a checked solution");
+
+            ValidateEvaluationAgainstCriteria(task.Criteria, dto.Evaluation, isStudent: true);
+
+            var staleWeighted = solution.WeightedValues
+                .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+            _context.WeightedCriterionValues.RemoveRange(staleWeighted);
+            foreach (var v in staleWeighted) solution.WeightedValues.Remove(v);
+
+            var staleToggled = solution.ToggledValues
+                .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+            _context.ToggledCriterionValues.RemoveRange(staleToggled);
+            foreach (var v in staleToggled) solution.ToggledValues.Remove(v);
+
+            PersistEvaluationValues(solution, dto.Evaluation, currentUserId, isSelfAssessment: true);
+
+            await _context.SaveChangesAsync();
+            return new IdRequestDto { Id = solution.Id };
+        }
+
+        public async Task<IdRequestDto> DeleteSelfAssessmentAsync(Guid currentUserId, Guid taskId)
+        {
+            var team = await _context.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.AssignmentId == taskId && t.Members.Any(m => m.UserId == currentUserId));
+            if (team == null)
+                throw new ForbiddenException("You are not a member of any team for this assignment");
+
+            var solution = await _context.TeamSolutions
+                .Include(s => s.WeightedValues)
+                .Include(s => s.ToggledValues)
+                .FirstOrDefaultAsync(s => s.TaskId == taskId && s.TeamId == team.Id);
+            if (solution == null)
+                throw new NotFoundException("Solution not found");
+
+            if (solution.Status == SolutionStatus.Checked)
+                throw new BadRequestException("Cannot modify self-assessment for a checked solution");
+
+            var staleWeighted = solution.WeightedValues
+                .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+            _context.WeightedCriterionValues.RemoveRange(staleWeighted);
+            foreach (var v in staleWeighted) solution.WeightedValues.Remove(v);
+
+            var staleToggled = solution.ToggledValues
+                .Where(v => v.IsSelfAssessment && v.EvaluatorUserId == currentUserId).ToList();
+            _context.ToggledCriterionValues.RemoveRange(staleToggled);
+            foreach (var v in staleToggled) solution.ToggledValues.Remove(v);
+
+            await _context.SaveChangesAsync();
+            return new IdRequestDto { Id = solution.Id };
+        }
+
+        public async Task<GradeBreakdownDto> PreviewScoreAsync(Guid currentUserId, Guid solutionId, GradePreviewRequestDto dto)
+        {
+            var solution = await _context.TeamSolutions
+                .Include(s => s.Task).ThenInclude(t => t.Criteria)
+                .Include(s => s.WeightedValues)
+                .Include(s => s.ToggledValues)
+                .FirstOrDefaultAsync(s => s.Id == solutionId);
+            if (solution == null)
+                throw new NotFoundException("Solution not found");
+
+            var role = await _context.CourseRoles
+                .FirstOrDefaultAsync(r => r.CourseId == solution.Task.CourseId && r.UserId == currentUserId);
+            if (role == null || role.RoleType != UserRoleType.Teacher)
+                throw new ForbiddenException("Only teachers can preview");
+
+            ValidateEvaluationAgainstCriteria(solution.Task.Criteria, dto.Evaluation, isStudent: false);
+
+            var selfEvals = BuildSelfEvaluationDtos(solution);
+
+            return _gradeCalculator.Calculate(BuildCalculatorInput(
+                solution.Task, solution.SubmittedAt, dto.Evaluation, selfEvals));
+        }
+
         #region Private Helpers
+
+        private static IReadOnlyList<EvaluationDto> BuildSelfEvaluationDtos(TeamSolution solution)
+        {
+            return solution.WeightedValues.Where(v => v.IsSelfAssessment)
+                .Select(v => v.EvaluatorUserId)
+                .Concat(solution.ToggledValues.Where(v => v.IsSelfAssessment).Select(v => v.EvaluatorUserId))
+                .Distinct()
+                .Select(uid => CriterionMapper.ToEvaluationDto(
+                    solution.WeightedValues.Where(v => v.IsSelfAssessment && v.EvaluatorUserId == uid),
+                    solution.ToggledValues.Where(v => v.IsSelfAssessment && v.EvaluatorUserId == uid)))
+                .ToList();
+        }
+
+        private static List<MemberSelfAssessmentDto> BuildSelfAssessmentList(TeamSolution solution)
+        {
+            return solution.WeightedValues.Where(v => v.IsSelfAssessment)
+                .Select(v => v.EvaluatorUserId)
+                .Concat(solution.ToggledValues.Where(v => v.IsSelfAssessment).Select(v => v.EvaluatorUserId))
+                .Distinct()
+                .Select(uid =>
+                {
+                    var member = solution.Team.Members.FirstOrDefault(m => m.UserId == uid);
+                    return new MemberSelfAssessmentDto
+                    {
+                        UserId = uid,
+                        Credentials = member?.User?.Credentials ?? string.Empty,
+                        Evaluation = CriterionMapper.ToEvaluationDto(
+                            solution.WeightedValues.Where(v => v.IsSelfAssessment && v.EvaluatorUserId == uid),
+                            solution.ToggledValues.Where(v => v.IsSelfAssessment && v.EvaluatorUserId == uid))
+                    };
+                })
+                .ToList();
+        }
+
+        private GradeCalculationInput BuildCalculatorInput(
+            TeamAssignment task,
+            DateTime solutionTimestamp,
+            EvaluationDto teacherEvaluation,
+            IReadOnlyList<EvaluationDto> selfEvaluations)
+        {
+            return new GradeCalculationInput
+            {
+                MaxScore = task.MaxScore,
+                FailThreshold = task.FailThreshold,
+                SuccessThreshold = task.SuccessThreshold,
+                StudentScoreWeight = task.StudentScoreWeight,
+                PenaltyPerDay = task.PenaltyPerDay,
+                MaxDays = task.MaxDays,
+                Deadline = task.Deadline,
+                SolutionTimestamp = solutionTimestamp,
+                Criteria = task.Criteria.ToList(),
+                TeacherEvaluation = CriterionMapper.ToCalculatorInput(teacherEvaluation),
+                SelfEvaluations = selfEvaluations.Select(CriterionMapper.ToCalculatorInput).ToList()
+            };
+        }
+
+        private static void ValidateEvaluationAgainstCriteria(
+            IEnumerable<Criterion> criteria,
+            EvaluationDto evaluation,
+            bool isStudent)
+        {
+            var weightedById = criteria.OfType<WeightedCriterion>().ToDictionary(c => c.Id);
+            var bpIds = criteria.OfType<BonusPenaltyCriterion>().Select(c => c.Id).ToHashSet();
+            var blockingIds = criteria.OfType<BlockingModifier>().Select(c => c.Id).ToHashSet();
+            var allToggled = bpIds.Concat(blockingIds).ToHashSet();
+
+            foreach (var v in evaluation.WeightedValues)
+            {
+                if (!weightedById.TryGetValue(v.CriterionId, out var c))
+                    throw new BadRequestException($"Unknown or non-weighted criterion {v.CriterionId}");
+                if (v.Score < 0)
+                    throw new BadRequestException("Score cannot be negative");
+                if (v.Score > c.MaxScore)
+                    throw new BadRequestException($"Score for '{c.Title}' exceeds max ({c.MaxScore})");
+            }
+
+            foreach (var v in evaluation.ToggledValues)
+            {
+                if (isStudent)
+                {
+                    if (!bpIds.Contains(v.CriterionId))
+                        throw new BadRequestException($"Students can only toggle bonus/penalty criteria; got {v.CriterionId}");
+                }
+                else if (!allToggled.Contains(v.CriterionId))
+                {
+                    throw new BadRequestException($"Unknown toggled criterion {v.CriterionId}");
+                }
+            }
+        }
+
+        private void PersistEvaluationValues(
+            TeamSolution solution,
+            EvaluationDto eval,
+            Guid evaluatorId,
+            bool isSelfAssessment)
+        {
+            foreach (var w in eval.WeightedValues)
+            {
+                _context.WeightedCriterionValues.Add(new WeightedCriterionValue
+                {
+                    Id = Guid.NewGuid(),
+                    CriterionId = w.CriterionId,
+                    TeamSolutionId = solution.Id,
+                    EvaluatorUserId = evaluatorId,
+                    IsSelfAssessment = isSelfAssessment,
+                    Score = w.Score,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedDate = DateTime.UtcNow
+                });
+            }
+
+            foreach (var t in eval.ToggledValues)
+            {
+                _context.ToggledCriterionValues.Add(new ToggledCriterionValue
+                {
+                    Id = Guid.NewGuid(),
+                    CriterionId = t.CriterionId,
+                    TeamSolutionId = solution.Id,
+                    EvaluatorUserId = evaluatorId,
+                    IsSelfAssessment = isSelfAssessment,
+                    Enabled = t.Enabled,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedDate = DateTime.UtcNow
+                });
+            }
+        }
 
         private async Task<(Team? team, bool isCaptain)> GetTeamAndCaptainStatusAsync(Guid userId, Guid taskId)
         {

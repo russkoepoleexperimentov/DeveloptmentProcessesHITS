@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Post;
+using Application.DTOs.Post;
 using FluentValidation;
 using GoogleClass.DTOs.Common;
 
@@ -18,7 +18,7 @@ public class CreateUpdatePostValidator : AbstractValidator<CreateUpdatePostDto>
                 .Must(t => t == TaskType.Mandatory || t == TaskType.Optional);
             RuleFor(x => x.SolvableAfterDeadline).NotNull();
         });
-        
+
         When(x => x.Type == PostType.TEAM_TASK, () =>
         {
             RuleFor(x => x.MaxScore).InclusiveBetween(1, 100);
@@ -37,6 +37,26 @@ public class CreateUpdatePostValidator : AbstractValidator<CreateUpdatePostDto>
             RuleFor(x => x.MaxScore).Null();
             RuleFor(x => x.TaskType).Null();
             RuleFor(x => x.SolvableAfterDeadline).Null();
+        });
+
+        When(x => x.Type == PostType.TASK || x.Type == PostType.TEAM_TASK, () =>
+        {
+            RuleFor(x => x.FailThreshold)
+                .InclusiveBetween(0f, 1f)
+                .When(x => x.FailThreshold.HasValue);
+            RuleFor(x => x.SuccessThreshold)
+                .InclusiveBetween(0f, 1f)
+                .When(x => x.SuccessThreshold.HasValue);
+            RuleFor(x => x.StudentScoreWeight)
+                .InclusiveBetween(0f, 1f)
+                .When(x => x.StudentScoreWeight.HasValue);
+            RuleFor(x => x.PenaltyPerDay)
+                .GreaterThan(0f)
+                .When(x => x.PenaltyPerDay.HasValue);
+            RuleFor(x => x.MaxDays)
+                .GreaterThan(0)
+                .When(x => x.PenaltyPerDay.HasValue)
+                .WithMessage("MaxDays must be > 0 when penaltyPerDay is set");
         });
     }
 }

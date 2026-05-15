@@ -1,4 +1,5 @@
-﻿using GoogleClass.DTOs.Common;
+using Application.DTOs.Criterion;
+using GoogleClass.DTOs.Common;
 using System.ComponentModel.DataAnnotations;
 
 namespace Application.DTOs.Post
@@ -24,13 +25,21 @@ namespace Application.DTOs.Post
 
         public CaptainSelectionMode? CaptainMode { get; set; }
         public int? VotingDurationHours { get; set; }
-     
+
         public int? PredefinedTeamsCount { get; set; }
-        public bool? AllowJoinTeam { get; set; } 
-        public bool? AllowLeaveTeam { get; set; } 
-        public bool? AllowStudentTransferCaptain { get; set; } 
+        public bool? AllowJoinTeam { get; set; }
+        public bool? AllowLeaveTeam { get; set; }
+        public bool? AllowStudentTransferCaptain { get; set; }
 
         public bool? CopyGroupsFromPreviousAssignment { get; set; }
         public Guid? SourceAssignmentId { get; set; }
+
+        public float? FailThreshold { get; set; }
+        public float? SuccessThreshold { get; set; }
+        public float? StudentScoreWeight { get; set; }
+        public float? PenaltyPerDay { get; set; }
+        public int? MaxDays { get; set; }
+
+        public List<CriterionDefinitionDto>? Criteria { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Application.Services.Interfaces;
+﻿using Application.DTOs.Grading;
+using Application.Services.Interfaces;
 using Common;
 using GoogleClass.DTOs;
 using GoogleClass.DTOs.Common;
@@ -106,6 +107,23 @@ public class SolutionController : ControllerBase
         var result = await _solutionService.MarkSolutionAsync(userId, solutionId, dto);
 
         return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
+
+    [HttpPost("solution/{solutionId}/preview")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<GradeBreakdownDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> PreviewScore(Guid solutionId, GradePreviewRequestDto dto)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+
+        var result = await _solutionService.PreviewScoreAsync(userId, solutionId, dto);
+
+        return Ok(new ApiResponse<GradeBreakdownDto>
         {
             Type = ApiResponseType.Success,
             Message = null,
