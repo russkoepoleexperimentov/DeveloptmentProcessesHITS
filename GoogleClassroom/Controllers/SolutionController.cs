@@ -130,4 +130,40 @@ public class SolutionController : ControllerBase
             Data = result
         });
     }
+
+    /// <summary>
+    /// Подать или обновить свою самооценку для одиночного задания
+    /// </summary>
+    [HttpPut("task/{taskId}/self-assessment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SubmitSelfAssessment(Guid taskId, SubmitSelfAssessmentDto dto)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+        var result = await _solutionService.SubmitSelfAssessmentAsync(userId, taskId, dto);
+        return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
+
+    /// <summary>
+    /// Удалить свою самооценку для одиночного задания
+    /// </summary>
+    [HttpDelete("task/{taskId}/self-assessment")]
+    [Authorize(AuthenticationSchemes = "Bearer")]
+    [ProducesResponseType(typeof(ApiResponse<IdRequestDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DeleteSelfAssessment(Guid taskId)
+    {
+        var userId = HttpContext.GetUserId()!.Value;
+        var result = await _solutionService.DeleteSelfAssessmentAsync(userId, taskId);
+        return Ok(new ApiResponse<IdRequestDto>
+        {
+            Type = ApiResponseType.Success,
+            Message = null,
+            Data = result
+        });
+    }
 }

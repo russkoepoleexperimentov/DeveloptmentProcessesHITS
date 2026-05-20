@@ -60,8 +60,6 @@ public class SolutionService : ISolutionService
         if (dto.Files != null && dto.Files.Any())
             await ValidateFilesExistAsync(dto.Files);
 
-        if (task.StudentScoreWeight > 0f && dto.SelfAssessment == null)
-            throw new BadRequestException("Self-assessment is required for this task");
         if (task.StudentScoreWeight == 0f && dto.SelfAssessment != null)
             dto.SelfAssessment = null;
 
@@ -345,6 +343,74 @@ public class SolutionService : ISolutionService
         return _gradeCalculator.Calculate(BuildCalculatorInput(
             solution.Task!, solution.SubmittedAt, dto.Evaluation,
             selfEvalDto != null ? new[] { selfEvalDto } : Array.Empty<EvaluationDto>()));
+    }
+
+    public async Task<IdRequestDto> SubmitSelfAssessmentAsync(Guid currentUserId, Guid taskId, SubmitSelfAssessmentDto dto)
+    {
+        var task = await _context.Assignments
+            .Include(a => a.Criteria)
+            .FirstOrDefaultAsync(a => a.Id == taskId);
+        if (task == null)
+            throw new NotFoundException("Task not found");
+
+        if (task.StudentScoreWeight == 0f)
+            throw new BadRequestException("Self-assessment is disabled for this task");
+
+        var role = await _context.CourseRoles
+            .FirstOrDefaultAsync(r => r.CourseId == task.CourseId && r.UserId == currentUserId);
+        if (role == null || role.RoleType != UserRoleType.Student)
+            throw new ForbiddenException("Only students can submit self-assessment");
+
+        var solution = await _context.Solutions
+            .Include(s => s.WeightedValues)
+            .Include(s => s.ToggledValues)
+            .FirstOrDefaultAsync(s => s.TaskId == taskId && s.UserId == currentUserId);
+        if (solution == null)
+            throw new BadRequestException("You must submit the solution before self-assessment");
+
+        if (solution.Status == SolutionStatus.Checked)
+            throw new BadRequestException("Cannot modify self-assessment for a checked solution");
+
+        ValidateEvaluationAgainstCriteria(task.Criteria, dto.Evaluation, isStudent: true);
+
+        var staleWeighted = solution.WeightedValues.Where(v => v.IsSelfAssessment).ToList();
+        _context.WeightedCriterionValues.RemoveRange(staleWeighted);
+        foreach (var v in staleWeighted) solution.WeightedValues.Remove(v);
+
+        var staleToggled = solution.ToggledValues.Where(v => v.IsSelfAssessment).ToList();
+        _context.ToggledCriterionValues.RemoveRange(staleToggled);
+        foreach (var v in staleToggled) solution.ToggledValues.Remove(v);
+
+        PersistEvaluationValues(solution, null, dto.Evaluation, currentUserId, isSelfAssessment: true);
+
+        solution.UpdatedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return new IdRequestDto { Id = solution.Id };
+    }
+
+    public async Task<IdRequestDto> DeleteSelfAssessmentAsync(Guid currentUserId, Guid taskId)
+    {
+        var solution = await _context.Solutions
+            .Include(s => s.WeightedValues)
+            .Include(s => s.ToggledValues)
+            .FirstOrDefaultAsync(s => s.TaskId == taskId && s.UserId == currentUserId);
+        if (solution == null)
+            throw new NotFoundException("Solution not found");
+
+        if (solution.Status == SolutionStatus.Checked)
+            throw new BadRequestException("Cannot modify self-assessment for a checked solution");
+
+        var staleWeighted = solution.WeightedValues.Where(v => v.IsSelfAssessment).ToList();
+        _context.WeightedCriterionValues.RemoveRange(staleWeighted);
+        foreach (var v in staleWeighted) solution.WeightedValues.Remove(v);
+
+        var staleToggled = solution.ToggledValues.Where(v => v.IsSelfAssessment).ToList();
+        _context.ToggledCriterionValues.RemoveRange(staleToggled);
+        foreach (var v in staleToggled) solution.ToggledValues.Remove(v);
+
+        solution.UpdatedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+        return new IdRequestDto { Id = solution.Id };
     }
 
     private GradeCalculationInput BuildCalculatorInput(

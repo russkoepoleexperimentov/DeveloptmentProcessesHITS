@@ -20,4 +20,6 @@ public interface ISolutionService
         Guid? studentId);
     Task<IdRequestDto> MarkSolutionAsync(Guid currentUserId, Guid solutionId, UpdateSolutionRequestDto dto);
     Task<GradeBreakdownDto> PreviewScoreAsync(Guid currentUserId, Guid solutionId, GradePreviewRequestDto dto);
+    Task<IdRequestDto> SubmitSelfAssessmentAsync(Guid currentUserId, Guid taskId, SubmitSelfAssessmentDto dto);
+    Task<IdRequestDto> DeleteSelfAssessmentAsync(Guid currentUserId, Guid taskId);
 }
