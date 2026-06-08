@@ -12,6 +12,7 @@ public class PostMappingProfile : Profile
             .ForMember(dest => dest.CourseId, opt => opt.Ignore())
             .ForMember(dest => dest.AuthorId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.Criteria, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore());
 
         CreateMap<CreateUpdatePostDto, Assignment>()
@@ -20,7 +21,8 @@ public class PostMappingProfile : Profile
             .ForMember(dest => dest.AuthorId, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.Criteria, opt => opt.Ignore())
             .ForMember(dest => dest.TaskType,
-                opt => opt.MapFrom(src => src.TaskType.HasValue ? src.TaskType.Value.ToString() : null));
+                opt => opt.MapFrom(src => src.TaskType.HasValue ? src.TaskType.ToString() : null));
     }
 }

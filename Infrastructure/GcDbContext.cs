@@ -106,4 +106,28 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        NormalizeDateTime();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        NormalizeDateTime();
+        return base.SaveChanges();
+    }
+
+    private void NormalizeDateTime()
+    {
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            foreach (var prop in entry.Properties)
+            {
+                if (prop.CurrentValue is DateTime dt && dt.Kind != DateTimeKind.Utc)
+                    prop.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+            }
+        }
+    }
 }
