@@ -24,6 +24,7 @@ public class SolutionService : ISolutionService
     private readonly IValidator<SubmitSolutionRequestDto> _submitValidator;
     private readonly IValidator<UpdateSolutionRequestDto> _updateValidator;
     private readonly IGradeCalculator _gradeCalculator;
+    private readonly IPeerReviewService _peerReviewService;
 
     public SolutionService(
         GcDbContext context,
@@ -31,7 +32,8 @@ public class SolutionService : ISolutionService
         IMapper mapper,
         IValidator<SubmitSolutionRequestDto> submitValidator,
         IValidator<UpdateSolutionRequestDto> updateValidator,
-        IGradeCalculator gradeCalculator)
+        IGradeCalculator gradeCalculator,
+        IPeerReviewService peerReviewService)
     {
         _context = context;
         _userManager = userManager;
@@ -39,6 +41,7 @@ public class SolutionService : ISolutionService
         _submitValidator = submitValidator;
         _updateValidator = updateValidator;
         _gradeCalculator = gradeCalculator;
+        _peerReviewService = peerReviewService;
     }
 
     public async Task<IdRequestDto> SubmitSolutionAsync(Guid currentUserId, Guid taskId, SubmitSolutionRequestDto dto)
@@ -182,7 +185,8 @@ public class SolutionService : ISolutionService
             SelfAssessment = selfWeighted.Any() || selfToggled.Any()
                 ? CriterionMapper.ToEvaluationDto(selfWeighted, selfToggled) : null,
             TeacherEvaluation = teacherWeighted.Any() || teacherToggled.Any()
-                ? CriterionMapper.ToEvaluationDto(teacherWeighted, teacherToggled) : null
+                ? CriterionMapper.ToEvaluationDto(teacherWeighted, teacherToggled) : null,
+            PeerReviewProgress = await _peerReviewService.GetIndividualProgressOrNullAsync(currentUserId, taskId)
         };
     }
 

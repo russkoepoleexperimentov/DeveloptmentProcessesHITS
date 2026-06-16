@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Application.DTOs.Grading;
+using Application.DTOs.Grading.PeerReview;
 using Application.DTOs.Post;
 using GoogleClass.DTOs.Post;
 using GoogleClass.Models;
@@ -24,4 +25,6 @@ public class StudentSolutionDetailsDto
     public EvaluationDto? SelfAssessment { get; set; }
     public EvaluationDto? TeacherEvaluation { get; set; }
     public GradeBreakdownDto? Breakdown { get; set; }
+
+    public PeerReviewProgressDto? PeerReviewProgress { get; set; }
 }

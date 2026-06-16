@@ -20,19 +20,22 @@ namespace Application.Services.Implementations
         private readonly IValidator<UpdateTeamSolutionRequestDto> _updateValidator;
         private readonly IGradeDistributionService _gradeDistributionService;
         private readonly IGradeCalculator _gradeCalculator;
+        private readonly IPeerReviewService _peerReviewService;
 
         public TeamSolutionService(
             GcDbContext context,
             IValidator<SubmitTeamSolutionRequestDto> submitValidator,
             IValidator<UpdateTeamSolutionRequestDto> updateValidator,
             IGradeDistributionService gradeDistributionService,
-            IGradeCalculator gradeCalculator)
+            IGradeCalculator gradeCalculator,
+            IPeerReviewService peerReviewService)
         {
             _context = context;
             _submitValidator = submitValidator;
             _updateValidator = updateValidator;
             _gradeDistributionService = gradeDistributionService;
             _gradeCalculator = gradeCalculator;
+            _peerReviewService = peerReviewService;
         }
 
         public async Task<IdRequestDto> SubmitSolutionAsync(
@@ -218,7 +221,8 @@ namespace Application.Services.Implementations
                 }).ToList(),
                 SelfAssessments = selfAssessments,
                 TeacherEvaluation = teacherWeighted.Any() || teacherToggled.Any()
-                    ? CriterionMapper.ToEvaluationDto(teacherWeighted, teacherToggled) : null
+                    ? CriterionMapper.ToEvaluationDto(teacherWeighted, teacherToggled) : null,
+                PeerReviewProgress = await _peerReviewService.GetTeamProgressOrNullAsync(currentUserId, taskId)
             };
         }
 

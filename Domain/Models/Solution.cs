@@ -11,6 +11,8 @@ public class Solution : Commentable
 
     public DateTime SubmittedAt { get; set; }
 
+    public bool PeerReviewCounted { get; set; }
+
     public virtual ICollection<FileSolution> FileSolutions { get; set; } = new List<FileSolution>();
     public virtual User User { get; set; }
     public Guid UserId { get; set; }

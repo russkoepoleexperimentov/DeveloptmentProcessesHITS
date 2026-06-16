@@ -48,5 +48,8 @@ public class PostDetailsDto
     public float? PenaltyPerDay { get; set; }
     public int? MaxDays { get; set; }
 
+    public GradingMode? GradingMode { get; set; }
+    public int? MinPeerReviewsRequired { get; set; }
+
     public List<CriterionDto>? Criteria { get; set; }
 }

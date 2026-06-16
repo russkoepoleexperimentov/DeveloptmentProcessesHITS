@@ -31,6 +31,14 @@ public class CreateUpdatePostValidator : AbstractValidator<CreateUpdatePostDto>
                 .WithMessage("MaxTeamSize must be >= MinTeamSize");
         });
 
+        When(x => x.Type == PostType.TASK && x.GradingMode == GradingMode.PeerToPeer, () =>
+        {
+            RuleFor(x => x.MinPeerReviewsRequired)
+                .NotNull()
+                .GreaterThanOrEqualTo(1)
+                .WithMessage("MinPeerReviewsRequired is required and must be >= 1 for PeerToPeer individual task");
+        });
+
         When(x => x.Type == PostType.POST, () =>
         {
             RuleFor(x => x.Deadline).Null();

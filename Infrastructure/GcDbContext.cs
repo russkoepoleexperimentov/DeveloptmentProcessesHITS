@@ -42,10 +42,21 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     public DbSet<BlockingModifier> BlockingModifiers { get; set; }
     public DbSet<WeightedCriterionValue> WeightedCriterionValues { get; set; }
     public DbSet<ToggledCriterionValue> ToggledCriterionValues { get; set; }
+    public DbSet<PeerReview> PeerReviews { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Assignment>()
+            .Property(a => a.GradingMode)
+            .HasDefaultValue(GoogleClass.DTOs.Common.GradingMode.TeacherReview);
+        modelBuilder.Entity<TeamAssignment>()
+            .Property(a => a.GradingMode)
+            .HasDefaultValue(GoogleClass.DTOs.Common.GradingMode.TeacherReview);
+        modelBuilder.Entity<Solution>()
+            .Property(s => s.PeerReviewCounted)
+            .HasDefaultValue(false);
 
         modelBuilder.Entity<Criterion>()
             .HasDiscriminator<string>("CriterionType")
@@ -81,6 +92,11 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
                 .WithMany()
                 .HasForeignKey(v => v.EvaluatorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne(v => v.PeerReview)
+                .WithMany(p => p.WeightedValues)
+                .HasForeignKey(v => v.PeerReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<ToggledCriterionValue>(b =>
@@ -104,6 +120,42 @@ public class GcDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
                 .WithMany()
                 .HasForeignKey(v => v.EvaluatorUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne(v => v.PeerReview)
+                .WithMany(p => p.ToggledValues)
+                .HasForeignKey(v => v.PeerReviewId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PeerReview>(b =>
+        {
+            b.HasOne(p => p.Task)
+                .WithMany()
+                .HasForeignKey(p => p.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(p => p.Reviewer)
+                .WithMany()
+                .HasForeignKey(p => p.ReviewerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne(p => p.ReviewerTeam)
+                .WithMany()
+                .HasForeignKey(p => p.ReviewerTeamId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            b.HasOne(p => p.Solution)
+                .WithMany()
+                .HasForeignKey(p => p.SolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasOne(p => p.TeamSolution)
+                .WithMany()
+                .HasForeignKey(p => p.TeamSolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            b.HasIndex(p => new { p.TaskId, p.ReviewerId, p.SolutionId }).IsUnique();
+            b.HasIndex(p => new { p.TaskId, p.ReviewerId, p.TeamSolutionId }).IsUnique();
         });
     }
 }

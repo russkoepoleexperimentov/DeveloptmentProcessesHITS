@@ -1,4 +1,5 @@
 using Application.DTOs.Auth;
+using Application.DTOs.Grading.PeerReview;
 using Application.DTOs.Post;
 using Application.Profiles;
 using Application.Services.Abstractions;
@@ -129,6 +130,8 @@ namespace Web
                 .AddScoped<ICommentService, CommentService>()
                 .AddScoped<ISolutionService, SolutionService>()
                 .AddScoped<ITeamSolutionService, TeamSolutionService>()
+                .AddScoped<IPeerReviewService, PeerReviewService>()
+                .AddScoped<IValidator<SubmitPeerReviewDto>, SubmitPeerReviewDtoValidator>()
                 .AddScoped<IValidator<CreateUpdatePostDto>, CreateUpdatePostValidator>()
                 .AddScoped<IFileService, FileService>()
                 .AddScoped<IValidator<UserRegisterDto>, UserRegistrationValidator>()

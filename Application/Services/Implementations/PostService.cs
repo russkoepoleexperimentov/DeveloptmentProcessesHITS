@@ -146,6 +146,8 @@ namespace Application.Services.Implementations
 
             ValidateTypeMatch(post, dto.Type);
 
+            await GuardGradingModeChangeAsync(post, dto);
+
             if (dto.Files != null && dto.Files.Any())
                 await ValidateFilesExist(dto.Files);
 
@@ -274,6 +276,19 @@ namespace Application.Services.Implementations
             assignment.StudentScoreWeight = Math.Clamp(dto.StudentScoreWeight ?? 0f, 0f, 1f);
             assignment.PenaltyPerDay = dto.PenaltyPerDay;
             assignment.MaxDays = dto.MaxDays ?? 0;
+
+            if (dto.GradingMode.HasValue)
+                assignment.GradingMode = dto.GradingMode.Value;
+
+            if (assignment.GradingMode == GradingMode.PeerToPeer)
+            {
+                if (dto.MinPeerReviewsRequired.HasValue)
+                    assignment.MinPeerReviewsRequired = dto.MinPeerReviewsRequired;
+            }
+            else
+            {
+                assignment.MinPeerReviewsRequired = null;
+            }
         }
 
         private static void ApplyGradingSettings(TeamAssignment assignment, CreateUpdatePostDto dto)
@@ -283,6 +298,9 @@ namespace Application.Services.Implementations
             assignment.StudentScoreWeight = Math.Clamp(dto.StudentScoreWeight ?? 0f, 0f, 1f);
             assignment.PenaltyPerDay = dto.PenaltyPerDay;
             assignment.MaxDays = dto.MaxDays ?? 0;
+
+            if (dto.GradingMode.HasValue)
+                assignment.GradingMode = dto.GradingMode.Value;
         }
 
         private async Task<TeamAssignment> CreateTeamAssignmentAsync(CreateUpdatePostDto dto, Guid courseId, Guid authorId)
@@ -476,6 +494,23 @@ namespace Application.Services.Implementations
             }
         }
 
+        private async Task GuardGradingModeChangeAsync(GenericPost post, CreateUpdatePostDto dto)
+        {
+            if (!dto.GradingMode.HasValue) return;
+
+            switch (post)
+            {
+                case Assignment a when dto.GradingMode.Value != a.GradingMode:
+                    if (await _context.Solutions.AnyAsync(s => s.TaskId == a.Id))
+                        throw new BadRequestException("Cannot change grading mode after solutions exist");
+                    break;
+                case TeamAssignment ta when dto.GradingMode.Value != ta.GradingMode:
+                    if (await _context.TeamSolutions.AnyAsync(s => s.TaskId == ta.Id))
+                        throw new BadRequestException("Cannot change grading mode after solutions exist");
+                    break;
+            }
+        }
+
         private void ValidateTypeMatch(GenericPost post, PostType requestedType)
         {
             var actualType = post switch
@@ -525,6 +560,8 @@ namespace Application.Services.Implementations
                     response.PenaltyPerDay = teamAssignment.PenaltyPerDay;
                     response.MaxDays = teamAssignment.MaxDays;
 
+                    response.GradingMode = teamAssignment.GradingMode;
+
                     response.Criteria = teamAssignment.Criteria
                         .OrderBy(c => c.OrderIndex)
                         .Select(CriterionMapper.ToDto).ToList();
@@ -542,6 +579,9 @@ namespace Application.Services.Implementations
                     response.StudentScoreWeight = assignment.StudentScoreWeight;
                     response.PenaltyPerDay = assignment.PenaltyPerDay;
                     response.MaxDays = assignment.MaxDays;
+
+                    response.GradingMode = assignment.GradingMode;
+                    response.MinPeerReviewsRequired = assignment.MinPeerReviewsRequired;
 
                     response.Criteria = assignment.Criteria
                         .OrderBy(c => c.OrderIndex)

@@ -13,6 +13,9 @@ public class ToggledCriterionValue : BaseEntityWithId
     public Guid? TeamSolutionId { get; set; }
     public virtual TeamSolution? TeamSolution { get; set; }
 
+    public Guid? PeerReviewId { get; set; }
+    public virtual PeerReview? PeerReview { get; set; }
+
     public Guid EvaluatorUserId { get; set; }
     public virtual User Evaluator { get; set; } = null!;
 

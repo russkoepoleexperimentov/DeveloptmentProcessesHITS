@@ -30,6 +30,8 @@ public class TeamAssignment : GenericPost
     public float? PenaltyPerDay { get; set; }
     public int MaxDays { get; set; }
 
+    public GradingMode GradingMode { get; set; } = GradingMode.TeacherReview;
+
     public virtual ICollection<Team> Teams { get; set; } = new List<Team>();
     public virtual ICollection<TeamSolution> TeamSolutions { get; set; } = new List<TeamSolution>();
 }

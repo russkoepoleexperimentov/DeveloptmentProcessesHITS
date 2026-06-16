@@ -15,4 +15,7 @@ public class Assignment : GenericPost
     public float StudentScoreWeight { get; set; }
     public float? PenaltyPerDay { get; set; }
     public int MaxDays { get; set; }
+
+    public GradingMode GradingMode { get; set; } = GradingMode.TeacherReview;
+    public int? MinPeerReviewsRequired { get; set; }
 }
