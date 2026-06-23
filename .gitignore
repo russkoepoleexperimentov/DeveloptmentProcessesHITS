@@ -57,3 +57,5 @@ msbuild.wrn
 *.leu
 global.json
 /GoogleClassroom/App_Data/uploads
+
+settings.local.json
